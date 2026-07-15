@@ -1,3 +1,24 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+
+catalog:
+  "@prisma/client": ^6
+  "@types/node": ^24.5.2
+  argon2: ^0.44
+  better-sqlite3: ^12
+  dotenv: ^17
+  drizzle-kit: ^0.31
+  drizzle-orm: ^0.44
+  hono: ^4
+  jsonwebtoken: ^9
+  pg: ^8
+  prisma: ^6
+  tsx: ^4
+  typescript: ^5
+  zod: ^4
