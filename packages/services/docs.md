@@ -13,7 +13,7 @@ HTTP. Application bootstrap code supplies the appropriate implementation:
 
 ```text
 Backend route ── db-main adapter ──┐
-                                  ├── service ── validation/domain rules
+                                   ├── service ── validation/domain rules
 Client UI ───── db-offline adapter ┘
 ```
 
