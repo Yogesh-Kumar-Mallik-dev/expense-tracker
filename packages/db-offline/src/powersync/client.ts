@@ -1,14 +1,17 @@
-import type { AbstractPowerSyncDatabase } from "@powersync/common";
 import type { OfflineDatabase } from "../database";
 
+export interface ClosablePowerSyncDatabase {
+  close: () => Promise<void>;
+}
+
 export interface OfflineClient {
-  powerSync: AbstractPowerSyncDatabase;
+  powerSync: ClosablePowerSyncDatabase;
   db: OfflineDatabase;
 }
 
 let currentClient: OfflineClient | undefined;
 
-export function setOfflineClient(client: OfflineClient) {
+export function setOfflineClient<T extends OfflineClient>(client: T): T {
   currentClient = client;
   return client;
 }
