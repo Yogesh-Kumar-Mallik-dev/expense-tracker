@@ -17,9 +17,10 @@ export class TransactionTagRepository {
   }
 
   delete(transactionId: string, tagId: string, userId: string) {
-    return this.db.transactionTag.delete({
+    return this.db.transactionTag.deleteMany({
       where: {
-        transactionId_tagId: { transactionId, tagId },
+        transactionId,
+        tagId,
         transaction: { userId },
       },
     });

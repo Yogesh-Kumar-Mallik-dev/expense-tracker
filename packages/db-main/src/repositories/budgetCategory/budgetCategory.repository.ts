@@ -17,9 +17,10 @@ export class BudgetCategoryRepository {
   }
 
   delete(budgetId: string, categoryId: string, userId: string) {
-    return this.db.budgetCategory.delete({
+    return this.db.budgetCategory.deleteMany({
       where: {
-        budgetId_categoryId: { budgetId, categoryId },
+        budgetId,
+        categoryId,
         budget: { userId },
       },
     });
