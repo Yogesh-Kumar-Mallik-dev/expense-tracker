@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./adapters/services": {
+      "types": "./dist/adapters/services.d.ts",
+      "default": "./dist/adapters/services.js"
     }
   },
   "scripts": {
@@ -17,6 +21,7 @@
     "check-types": "prisma generate && tsc --noEmit"
   },
   "dependencies": {
+    "@expense-tracker/services": "workspace:*",
     "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
     "pg": "catalog:"

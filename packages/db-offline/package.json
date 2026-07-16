@@ -21,6 +21,10 @@
     "./driver/desktop": {
       "types": "./dist/driver/desktop.d.ts",
       "default": "./dist/driver/desktop.js"
+    },
+    "./adapters/services": {
+      "types": "./dist/adapters/services.d.ts",
+      "default": "./dist/adapters/services.js"
     }
   },
   "scripts": {
@@ -29,6 +33,7 @@
     "drizzle:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@expense-tracker/services": "workspace:*",
     "@journeyapps/wa-sqlite": "catalog:",
     "@powersync/common": "catalog:",
     "@powersync/drizzle-driver": "catalog:",

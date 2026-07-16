@@ -47,7 +47,10 @@ export interface UpdateAccountInput {
 export interface AccountRepositoryPort {
   create(account: AccountRecord): Promise<unknown>;
   findById(id: string, userId: string): Promise<AccountRecord | null>;
-  listByUser(userId: string, includeArchived?: boolean): Promise<AccountRecord[]>;
+  listByUser(
+    userId: string,
+    includeArchived?: boolean,
+  ): Promise<AccountRecord[]>;
   update(
     id: string,
     userId: string,

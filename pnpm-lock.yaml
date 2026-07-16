@@ -45,6 +45,9 @@ catalogs:
     prisma:
       specifier: ^7
       version: 7.8.0
+    tsx:
+      specifier: ^4
+      version: 4.23.1
     typescript:
       specifier: ^5
       version: 5.9.2
@@ -68,6 +71,9 @@ importers:
 
   packages/db-main:
     dependencies:
+      '@expense-tracker/services':
+        specifier: workspace:*
+        version: link:../services
       '@prisma/adapter-pg':
         specifier: 'catalog:'
         version: 7.8.0
@@ -90,6 +96,9 @@ importers:
 
   packages/db-offline:
     dependencies:
+      '@expense-tracker/services':
+        specifier: workspace:*
+        version: link:../services
       '@journeyapps/wa-sqlite':
         specifier: 'catalog:'
         version: 1.7.2
@@ -167,6 +176,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.1
       typescript:
         specifier: 'catalog:'
         version: 5.9.2

@@ -7,6 +7,7 @@ For architectural and concurrency constraints, see [docs.md](./docs.md).
 ```sh
 pnpm --filter @expense-tracker/services check-types
 pnpm --filter @expense-tracker/services build
+pnpm --filter @expense-tracker/services test
 pnpm build
 ```
 
@@ -64,16 +65,38 @@ or syncs later, the transaction remains valid and the UI should expose retry.
 
 ## Backend integration
 
-Backend endpoints create services with adapters around `db-main` repositories.
+Backend endpoints create services with adapters from
+`@expense-tracker/db-main/adapters/services`.
 The endpoint supplies the authenticated `userId`; services validate inputs and
 repositories enforce ownership in their queries. Do not duplicate service rules
 inside route handlers.
 
 ## Offline integration
 
-Web, desktop, and mobile create services with adapters around `db-offline`
-repositories. Foreign-key IDs are validated against locally available state when
-needed and are never blocked because the parent has not reached PostgreSQL yet.
+Web, desktop, and mobile create services with adapters from
+`@expense-tracker/db-offline/adapters/services`. Foreign-key IDs are never
+blocked merely because the parent has not reached PostgreSQL yet.
+
+## Reporting
+
+```ts
+import { ReportingService } from "@expense-tracker/services/reporting";
+
+const reporting = new ReportingService(reportingRepository);
+const balances = await reporting.accountBalances(userId);
+const usage = await reporting.budgetUsage(userId, "2026-07-01", "2026-07-31");
+```
+
+These values are computed from non-tombstoned source rows on every read. They
+are never written back as counters. Transactions in a different currency are
+reported through `excludedTransactionIds` rather than silently combined.
+
+## Partial workflows
+
+Creating a transaction, assigning tags, and adding attachments are independent
+row operations. Use `partialWorkflow` to expose completed and pending steps to
+the UI. Retrying a pending step must not recreate the already-completed primary
+row.
 
 ## Unique conflicts
 

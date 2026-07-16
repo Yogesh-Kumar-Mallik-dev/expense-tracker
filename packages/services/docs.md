@@ -17,13 +17,25 @@ Backend route ── db-main adapter ──┐
 Client UI ───── db-offline adapter ┘
 ```
 
-The package currently implements:
+Version 1 implements:
 
 - `AccountService`
 - `TransactionService`
+- `CategoryService`
+- `TagService`
+- `BudgetService`
+- `AttachmentService`
+- `DeviceService`
+- `UserService` for shared profile behavior (authentication remains separate)
+- `BudgetCategoryService` and `TransactionTagService`
+- `ReportingService` for derived balances and budget usage
+- Permanent sync-conflict and partial-workflow contracts
 - Shared UUID and clock abstractions
 
-Category, tag, budget, attachment, user, and device services remain to be added.
+Concrete adapters are exported from both database packages:
+
+- `@expense-tracker/db-main/adapters/services`
+- `@expense-tracker/db-offline/adapters/services`
 
 ## Offline concurrency rules
 
@@ -56,3 +68,6 @@ Ports use platform-neutral records: UUID strings, ISO timestamp strings, and
 decimal money strings. Database adapters translate those records to Prisma or
 Drizzle types. Services do not perform remote existence checks for foreign keys;
 offline applications use locally known IDs and synchronize parents separately.
+
+Reporting adapters intentionally run unpaginated source-row queries. Reusing a
+paginated UI transaction query would silently undercount balances and budgets.
