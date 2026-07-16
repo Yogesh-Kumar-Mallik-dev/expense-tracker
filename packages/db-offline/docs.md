@@ -1,5 +1,8 @@
 # Offline Database
 
+See [usage-guide.md](./usage-guide.md) for platform initialization and query
+examples.
+
 `@expense-tracker/db-offline` provides the SQLite database used by the web,
 Expo/React Native, and Tauri applications. Drizzle supplies typed queries while
 PowerSync manages local-first synchronization with PostgreSQL.
@@ -85,6 +88,13 @@ let the user rename or merge it; services must not use check-then-insert.
 
 Credential providers must return a PowerSync endpoint and short-lived token.
 Returning `null` indicates that no user is signed in.
+
+## Service-layer boundary
+
+UI code should call `packages/services` rather than placing business rules in
+components or repositories. The offline repositories implement persistence
+ports for those services. Each platform still creates its own PowerSync driver,
+but Account and Transaction behavior remains shared.
 
 ## Drizzle migrations and PowerSync
 

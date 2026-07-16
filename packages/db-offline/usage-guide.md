@@ -1,5 +1,7 @@
 # Offline Database Usage Guide
 
+For schema, synchronization, and security decisions, see [docs.md](./docs.md).
+
 ## Initialize one platform database
 
 Create exactly one database instance for a filename during application startup.
@@ -90,6 +92,11 @@ await closeOfflineClient();
 ```
 
 ## Query through repositories
+
+Prefer constructing services with repository adapters in application bootstrap
+code. Direct repository calls are appropriate for adapter implementation and
+database diagnostics, but UI features should consume `AccountService`,
+`TransactionService`, and the other shared domain services as they are added.
 
 ```ts
 import {

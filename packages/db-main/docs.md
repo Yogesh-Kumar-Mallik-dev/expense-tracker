@@ -1,5 +1,7 @@
 # Main Database
 
+See [usage-guide.md](./usage-guide.md) for commands and integration examples.
+
 `@expense-tracker/db-main` is the backend-only PostgreSQL package. It owns the
 authoritative application schema, generates Prisma Client 7, and exposes
 user-scoped repositories for API and service-layer code.
@@ -71,6 +73,13 @@ by Prisma 7.
 
 Both build and type-check scripts generate Prisma Client first. This allows a
 clean clone to build without a committed generated client.
+
+## Service-layer boundary
+
+Business rules belong in `packages/services`, not in repositories. Backend route
+handlers inject `db-main` repository implementations into the same service ports
+used by offline clients. Repositories remain responsible only for persistence,
+ownership filters, tombstones, and domain-oriented queries.
 
 ## Environment
 

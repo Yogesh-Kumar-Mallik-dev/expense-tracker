@@ -13,6 +13,10 @@
     "./account": {
       "types": "./dist/account/index.d.ts",
       "default": "./dist/account/index.js"
+    },
+    "./transaction": {
+      "types": "./dist/transaction/index.d.ts",
+      "default": "./dist/transaction/index.js"
     }
   },
   "scripts": {

@@ -1,5 +1,7 @@
 # Main Database Usage Guide
 
+For schema and architecture details, see [docs.md](./docs.md).
+
 ## Build and generate
 
 Run commands through pnpm from the monorepo root:
@@ -39,6 +41,10 @@ The client uses `@prisma/adapter-pg` and reuses one development instance to
 avoid creating extra pools during hot reload.
 
 ## Use repositories
+
+Application endpoints should normally call `packages/services`. Direct
+repository use is intended for service adapters, authentication infrastructure,
+PowerSync upload processing, migrations, and focused administrative work.
 
 ```ts
 import {
