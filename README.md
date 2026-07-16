@@ -60,11 +60,11 @@ The project consists of a single backend powering three frontend applications. A
                            ┌─────────────────────────────┐
                            │       Next.js Backend       │
                            │─────────────────────────────│
-                           │ • REST API                 │
-                           │ • Authentication           │
-                           │ • Authorization            │
-                           │ • Business Endpoints       │
-                           │ • Prisma ORM              │
+                           │ • REST API                  │
+                           │ • Authentication            │
+                           │ • Authorization             │
+                           │ • Business Endpoints        │
+                           │ • Prisma ORM                │
                            └──────────────┬──────────────┘
                                           │
                                     Prisma ORM
