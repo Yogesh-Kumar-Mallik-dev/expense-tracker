@@ -9,6 +9,7 @@ export const users = sqliteTable(
     currency: text("currency", { length: 3 }).notNull().default("USD"),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [index("User_email_idx").on(table.email)],
 );

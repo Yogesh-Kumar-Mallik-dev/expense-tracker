@@ -7,7 +7,7 @@ Create exactly one database instance for a filename during application startup.
 ### Web
 
 ```ts
-import { setOfflineClient } from "@expense-tracker/db-offline";
+import { setOfflineClient } from "@db-offline";
 import { createWebDatabase } from "@expense-tracker/db-offline/driver/web";
 
 export const offline = setOfflineClient(
@@ -21,7 +21,7 @@ directory during setup or build.
 ### Expo / React Native
 
 ```ts
-import { setOfflineClient } from "@expense-tracker/db-offline";
+import { setOfflineClient } from "@db-offline";
 import { createMobileDatabase } from "@expense-tracker/db-offline/driver/mobile";
 
 export const offline = setOfflineClient(createMobileDatabase());
@@ -35,7 +35,7 @@ available in the standard Expo Go client.
 ```ts
 import { invoke } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
-import { setOfflineClient } from "@expense-tracker/db-offline";
+import { setOfflineClient } from "@db-offline";
 import {
   connectDesktopDatabase,
   createDesktopDatabase,
@@ -58,7 +58,7 @@ import {
   connectSync,
   createHttpCredentialsProvider,
   OfflineBackendConnector,
-} from "@expense-tracker/db-offline";
+} from "@db-offline";
 
 const connector = new OfflineBackendConnector({
   credentials: createHttpCredentialsProvider({
@@ -83,7 +83,7 @@ Disconnect on sign-out and close the client when the application permanently
 tears down:
 
 ```ts
-import { closeOfflineClient, disconnectSync } from "@expense-tracker/db-offline";
+import { closeOfflineClient, disconnectSync } from "@db-offline";
 
 await disconnectSync(offline.powerSync);
 await closeOfflineClient();
@@ -95,7 +95,7 @@ await closeOfflineClient();
 import {
   AccountRepository,
   TransactionRepository,
-} from "@expense-tracker/db-offline";
+} from "@db-offline";
 
 const accounts = new AccountRepository(offline.db);
 const transactions = new TransactionRepository(offline.db);
@@ -107,6 +107,10 @@ const recentTransactions = await transactions.listByUser(userId, {
   limit: 50,
 });
 ```
+
+Repository `delete` methods write an ISO timestamp to `deletedAt`. They are
+idempotent and never physically delete synchronized rows. Queries exclude these
+tombstones by default.
 
 Create IDs with the platform application's UUID utility before inserting offline
 records so the same UUID can be uploaded to PostgreSQL. For example, in a web

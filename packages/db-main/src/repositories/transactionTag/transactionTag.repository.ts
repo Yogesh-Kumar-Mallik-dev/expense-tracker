@@ -10,19 +10,26 @@ export class TransactionTagRepository {
 
   listByTransaction(transactionId: string, userId: string) {
     return this.db.transactionTag.findMany({
-      where: { transactionId, transaction: { userId } },
+      where: {
+        transactionId,
+        deletedAt: null,
+        transaction: { userId, deletedAt: null },
+        tag: { deletedAt: null },
+      },
       include: { tag: true },
       orderBy: { createdAt: "asc" },
     });
   }
 
   delete(transactionId: string, tagId: string, userId: string) {
-    return this.db.transactionTag.deleteMany({
+    return this.db.transactionTag.updateMany({
       where: {
         transactionId,
         tagId,
-        transaction: { userId },
+        deletedAt: null,
+        transaction: { userId, deletedAt: null },
       },
+      data: { deletedAt: new Date() },
     });
   }
 }

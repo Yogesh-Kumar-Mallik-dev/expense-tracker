@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import type { OfflineDatabase } from "../../database";
 import { syncStates } from "../../schema";
 import type { CreateSyncStateInput } from "./sync.types";
@@ -11,11 +11,11 @@ export class SyncRepository {
   }
 
   async findByDevice(deviceId: string, userId: string) {
-    return (await this.db.select().from(syncStates).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId))).limit(1))[0] ?? null;
+    return (await this.db.select().from(syncStates).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId), isNull(syncStates.deletedAt))).limit(1))[0] ?? null;
   }
 
   listByUser(userId: string) {
-    return this.db.select().from(syncStates).where(eq(syncStates.userId, userId)).orderBy(desc(syncStates.updatedAt));
+    return this.db.select().from(syncStates).where(and(eq(syncStates.userId, userId), isNull(syncStates.deletedAt))).orderBy(desc(syncStates.updatedAt));
   }
 
   upsertForDevice(data: CreateSyncStateInput) {
@@ -25,11 +25,12 @@ export class SyncRepository {
         checkpoint: data.checkpoint ?? null,
         lastSyncedAt: data.lastSyncedAt ?? null,
         updatedAt: data.updatedAt,
+        deletedAt: null,
       },
     });
   }
 
   deleteByDevice(deviceId: string, userId: string) {
-    return this.db.delete(syncStates).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId)));
+    return this.db.update(syncStates).set({ deletedAt: new Date().toISOString() }).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId), isNull(syncStates.deletedAt)));
   }
 }

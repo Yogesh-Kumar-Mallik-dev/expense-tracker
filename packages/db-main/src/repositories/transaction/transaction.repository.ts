@@ -14,12 +14,12 @@ export class TransactionRepository {
 
   findById(id: string, userId: string) {
     return this.db.transaction.findFirst({
-      where: { id, userId },
+      where: { id, userId, deletedAt: null },
       include: {
         account: true,
         category: true,
-        tags: { include: { tag: true } },
-        attachments: true,
+        tags: { where: { deletedAt: null, tag: { deletedAt: null } }, include: { tag: true } },
+        attachments: { where: { deletedAt: null } },
       },
     });
   }
@@ -29,6 +29,7 @@ export class TransactionRepository {
     return this.db.transaction.findMany({
       where: {
         userId,
+        deletedAt: null,
         ...(accountId ? { accountId } : {}),
         ...(categoryId ? { categoryId } : {}),
         ...(from || to
@@ -43,8 +44,8 @@ export class TransactionRepository {
       include: {
         account: true,
         category: true,
-        tags: { include: { tag: true } },
-        attachments: true,
+        tags: { where: { deletedAt: null, tag: { deletedAt: null } }, include: { tag: true } },
+        attachments: { where: { deletedAt: null } },
       },
       orderBy: { occurredAt: "desc" },
       ...(skip === undefined ? {} : { skip }),
@@ -53,10 +54,13 @@ export class TransactionRepository {
   }
 
   update(id: string, userId: string, data: UpdateTransactionInput) {
-    return this.db.transaction.update({ where: { id, userId }, data });
+    return this.db.transaction.update({ where: { id, userId, deletedAt: null }, data });
   }
 
   delete(id: string, userId: string) {
-    return this.db.transaction.delete({ where: { id, userId } });
+    return this.db.transaction.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

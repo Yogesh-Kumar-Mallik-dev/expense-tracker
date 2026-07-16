@@ -9,7 +9,7 @@ export const categories = sqliteTable(
   "Category",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
     parentId: text("parentId"),
     name: text("name").notNull(),
     type: text("type", { enum: categoryTypes }).notNull().default("EXPENSE"),
@@ -18,6 +18,7 @@ export const categories = sqliteTable(
     isArchived: integer("isArchived", { mode: "boolean" }).notNull().default(false),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("Category_userId_name_type_key").on(table.userId, table.name, table.type),
@@ -30,9 +31,10 @@ export const budgetCategories = sqliteTable(
   "BudgetCategory",
   {
     id: text("id").primaryKey().notNull(),
-    budgetId: text("budgetId").notNull().references(() => budgets.id, { onDelete: "cascade" }),
-    categoryId: text("categoryId").notNull().references(() => categories.id, { onDelete: "cascade" }),
+    budgetId: text("budgetId").notNull().references(() => budgets.id, { onDelete: "restrict" }),
+    categoryId: text("categoryId").notNull().references(() => categories.id, { onDelete: "restrict" }),
     createdAt: text("createdAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("BudgetCategory_budgetId_categoryId_key").on(table.budgetId, table.categoryId),

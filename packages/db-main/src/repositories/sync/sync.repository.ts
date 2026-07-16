@@ -9,11 +9,11 @@ export class SyncRepository {
   }
 
   findByDevice(deviceId: string, userId: string) {
-    return this.db.syncState.findFirst({ where: { deviceId, userId } });
+    return this.db.syncState.findFirst({ where: { deviceId, userId, deletedAt: null } });
   }
 
   listByUser(userId: string) {
-    return this.db.syncState.findMany({ where: { userId }, orderBy: { updatedAt: "desc" } });
+    return this.db.syncState.findMany({ where: { userId, deletedAt: null }, orderBy: { updatedAt: "desc" } });
   }
 
   upsertForDevice(
@@ -25,11 +25,14 @@ export class SyncRepository {
     return this.db.syncState.upsert({
       where: { deviceId },
       create: { deviceId, userId, checkpoint, lastSyncedAt },
-      update: { checkpoint, lastSyncedAt },
+      update: { checkpoint, lastSyncedAt, deletedAt: null },
     });
   }
 
   deleteByDevice(deviceId: string, userId: string) {
-    return this.db.syncState.delete({ where: { deviceId, userId } });
+    return this.db.syncState.updateMany({
+      where: { deviceId, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

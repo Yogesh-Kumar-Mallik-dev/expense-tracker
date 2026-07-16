@@ -9,21 +9,24 @@ export class AccountRepository {
   }
 
   findById(id: string, userId: string) {
-    return this.db.account.findFirst({ where: { id, userId } });
+    return this.db.account.findFirst({ where: { id, userId, deletedAt: null } });
   }
 
   listByUser(userId: string, includeArchived = false) {
     return this.db.account.findMany({
-      where: { userId, ...(includeArchived ? {} : { isArchived: false }) },
+      where: { userId, deletedAt: null, ...(includeArchived ? {} : { isArchived: false }) },
       orderBy: { name: "asc" },
     });
   }
 
   update(id: string, userId: string, data: UpdateAccountInput) {
-    return this.db.account.update({ where: { id, userId }, data });
+    return this.db.account.update({ where: { id, userId, deletedAt: null }, data });
   }
 
   delete(id: string, userId: string) {
-    return this.db.account.delete({ where: { id, userId } });
+    return this.db.account.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

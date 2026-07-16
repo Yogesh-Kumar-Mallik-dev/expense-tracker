@@ -9,18 +9,21 @@ export class DeviceRepository {
   }
 
   findById(id: string, userId: string) {
-    return this.db.device.findFirst({ where: { id, userId } });
+    return this.db.device.findFirst({ where: { id, userId, deletedAt: null } });
   }
 
   listByUser(userId: string) {
-    return this.db.device.findMany({ where: { userId }, orderBy: { lastSeenAt: "desc" } });
+    return this.db.device.findMany({ where: { userId, deletedAt: null }, orderBy: { lastSeenAt: "desc" } });
   }
 
   update(id: string, userId: string, data: UpdateDeviceInput) {
-    return this.db.device.update({ where: { id, userId }, data });
+    return this.db.device.update({ where: { id, userId, deletedAt: null }, data });
   }
 
   delete(id: string, userId: string) {
-    return this.db.device.delete({ where: { id, userId } });
+    return this.db.device.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

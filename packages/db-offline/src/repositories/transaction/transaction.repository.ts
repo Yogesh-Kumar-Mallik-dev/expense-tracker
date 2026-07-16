@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import type { OfflineDatabase } from "../../database";
 import { transactions } from "../../schema";
 import type { CreateTransactionInput, TransactionFilters, UpdateTransactionInput } from "./transaction.types";
@@ -11,12 +11,13 @@ export class TransactionRepository {
   }
 
   async findById(id: string, userId: string) {
-    return (await this.db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId))).limit(1))[0] ?? null;
+    return (await this.db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId), isNull(transactions.deletedAt))).limit(1))[0] ?? null;
   }
 
   listByUser(userId: string, filters: TransactionFilters = {}) {
     return this.db.select().from(transactions).where(and(
       eq(transactions.userId, userId),
+      isNull(transactions.deletedAt),
       filters.accountId ? eq(transactions.accountId, filters.accountId) : undefined,
       filters.categoryId ? eq(transactions.categoryId, filters.categoryId) : undefined,
       filters.from ? gte(transactions.occurredAt, filters.from) : undefined,
@@ -25,10 +26,10 @@ export class TransactionRepository {
   }
 
   update(id: string, userId: string, data: UpdateTransactionInput) {
-    return this.db.update(transactions).set(data).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+    return this.db.update(transactions).set(data).where(and(eq(transactions.id, id), eq(transactions.userId, userId), isNull(transactions.deletedAt)));
   }
 
   delete(id: string, userId: string) {
-    return this.db.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+    return this.db.update(transactions).set({ deletedAt: new Date().toISOString() }).where(and(eq(transactions.id, id), eq(transactions.userId, userId), isNull(transactions.deletedAt)));
   }
 }

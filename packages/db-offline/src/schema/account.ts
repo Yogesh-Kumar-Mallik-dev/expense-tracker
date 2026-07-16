@@ -8,7 +8,7 @@ export const accounts = sqliteTable(
   "Account",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     type: text("type", { enum: accountTypes }).notNull().default("CASH"),
     currency: text("currency", { length: 3 }).notNull(),
@@ -18,6 +18,7 @@ export const accounts = sqliteTable(
     isArchived: integer("isArchived", { mode: "boolean" }).notNull().default(false),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("Account_userId_name_key").on(table.userId, table.name),

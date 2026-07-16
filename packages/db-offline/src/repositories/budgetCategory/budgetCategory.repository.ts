@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { OfflineDatabase } from "../../database";
 import { budgetCategories, budgets, categories } from "../../schema";
 import type { CreateBudgetCategoryInput } from "./budgetCategory.types";
@@ -16,7 +16,13 @@ export class BudgetCategoryRepository {
       .from(budgetCategories)
       .innerJoin(budgets, eq(budgetCategories.budgetId, budgets.id))
       .innerJoin(categories, eq(budgetCategories.categoryId, categories.id))
-      .where(and(eq(budgetCategories.budgetId, budgetId), eq(budgets.userId, userId)))
+      .where(and(
+        eq(budgetCategories.budgetId, budgetId),
+        eq(budgets.userId, userId),
+        isNull(budgetCategories.deletedAt),
+        isNull(budgets.deletedAt),
+        isNull(categories.deletedAt),
+      ))
       .orderBy(asc(budgetCategories.createdAt));
   }
 
@@ -24,11 +30,12 @@ export class BudgetCategoryRepository {
     const ownedBudget = this.db
       .select({ id: budgets.id })
       .from(budgets)
-      .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId)));
+      .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId), isNull(budgets.deletedAt)));
 
-    return this.db.delete(budgetCategories).where(and(
+    return this.db.update(budgetCategories).set({ deletedAt: new Date().toISOString() }).where(and(
       eq(budgetCategories.budgetId, budgetId),
       eq(budgetCategories.categoryId, categoryId),
+      isNull(budgetCategories.deletedAt),
       eq(budgetCategories.budgetId, ownedBudget),
     ));
   }

@@ -9,6 +9,7 @@ PowerSync manages local-first synchronization with PostgreSQL.
 ```text
 packages/db-offline
 ├── drizzle                     # Generated SQLite migration
+├── index.ts                    # Source-level @db-offline entry
 ├── src
 │   ├── driver                  # Web, mobile, and desktop factories
 │   ├── powersync               # Connector and sync lifecycle
@@ -18,6 +19,17 @@ packages/db-offline
 │   └── index.ts                # Platform-neutral exports
 └── drizzle.config.ts
 ```
+
+Shared workspace code can import platform-neutral APIs, repositories, and schema
+types through the root alias:
+
+```ts
+import { AccountRepository, setOfflineClient } from "@db-offline";
+```
+
+The alias resolves through the package-root `index.ts`, which re-exports the
+public API from `src/index.ts`. Built package consumers can continue importing
+from `@expense-tracker/db-offline`.
 
 ## Schema parity
 
@@ -34,6 +46,12 @@ SQLite representations differ where necessary:
 - Booleans use integer columns with Drizzle boolean mapping.
 - `User.passwordHash` is never stored offline.
 - `RefreshToken` is marked as a PowerSync local-only table.
+
+Every synchronized table includes a `deletedAt` tombstone. Repository reads hide
+tombstones and repository delete methods update that field instead of issuing
+SQLite `DELETE` statements. Required foreign keys are restrictive rather than
+cascading. Refresh-token expiry cleanup is the only hard delete because that
+table is local-only.
 
 The PowerSync client schema is generated from the Drizzle tables using
 `DrizzleAppSchema`, keeping one client-side schema definition.
@@ -59,6 +77,11 @@ connection must be started by Rust through a Tauri command.
 to the configured upload callback. The backend must apply all operations in one
 database transaction. The local queue is completed only after the callback
 resolves successfully; thrown errors remain queued for retry.
+
+Unique constraints can reject writes created concurrently on two offline
+devices. The upload endpoint must distinguish permanent uniqueness conflicts
+from retryable failures. The UI recovery flow must show the rejected record and
+let the user rename or merge it; services must not use check-then-insert.
 
 Credential providers must return a PowerSync endpoint and short-lived token.
 Returning `null` indicates that no user is signed in.

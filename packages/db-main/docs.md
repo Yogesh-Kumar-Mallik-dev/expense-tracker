@@ -51,9 +51,17 @@ Most records belong to a user. Repository reads, updates, and deletes accept a
 Authentication and authorization still belong in the service or route layer;
 repositories do not determine the current user.
 
-Join deletion methods use ownership-constrained `deleteMany` calls. They return
-`{ count: number }`, where zero means the relation was absent or not owned by the
-provided user.
+All synced models use nullable `deletedAt` tombstones. Repository delete methods
+perform idempotent updates; no affected row means the record was already
+deleted, absent, or not owned by the provided user. Normal reads exclude
+tombstoned rows. Required foreign keys use restrictive deletes so an accidental
+physical parent delete cannot cascade through synchronized data.
+
+The database still enforces unique names and relationship pairs. Concurrent
+offline inserts can therefore be rejected during upload. The upload API must
+report this as a permanent sync conflict, and the UI must let the user rename or
+merge the conflicting record. Services must never use check-then-insert as a
+substitute for these constraints.
 
 ## Prisma configuration
 

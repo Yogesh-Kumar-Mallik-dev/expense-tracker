@@ -6,11 +6,12 @@ export const tags = sqliteTable(
   "Tag",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     color: text("color", { length: 7 }),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("Tag_userId_name_key").on(table.userId, table.name),
@@ -22,9 +23,10 @@ export const transactionTags = sqliteTable(
   "TransactionTag",
   {
     id: text("id").primaryKey().notNull(),
-    transactionId: text("transactionId").notNull().references(() => transactions.id, { onDelete: "cascade" }),
-    tagId: text("tagId").notNull().references(() => tags.id, { onDelete: "cascade" }),
+    transactionId: text("transactionId").notNull().references(() => transactions.id, { onDelete: "restrict" }),
+    tagId: text("tagId").notNull().references(() => tags.id, { onDelete: "restrict" }),
     createdAt: text("createdAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("TransactionTag_transactionId_tagId_key").on(table.transactionId, table.tagId),

@@ -9,18 +9,21 @@ export class TagRepository {
   }
 
   findById(id: string, userId: string) {
-    return this.db.tag.findFirst({ where: { id, userId } });
+    return this.db.tag.findFirst({ where: { id, userId, deletedAt: null } });
   }
 
   listByUser(userId: string) {
-    return this.db.tag.findMany({ where: { userId }, orderBy: { name: "asc" } });
+    return this.db.tag.findMany({ where: { userId, deletedAt: null }, orderBy: { name: "asc" } });
   }
 
   update(id: string, userId: string, data: UpdateTagInput) {
-    return this.db.tag.update({ where: { id, userId }, data });
+    return this.db.tag.update({ where: { id, userId, deletedAt: null }, data });
   }
 
   delete(id: string, userId: string) {
-    return this.db.tag.delete({ where: { id, userId } });
+    return this.db.tag.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

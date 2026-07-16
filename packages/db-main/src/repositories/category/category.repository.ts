@@ -10,26 +10,30 @@ export class CategoryRepository {
   }
 
   findById(id: string, userId: string) {
-    return this.db.category.findFirst({ where: { id, userId } });
+    return this.db.category.findFirst({ where: { id, userId, deletedAt: null } });
   }
 
   listByUser(userId: string, type?: CategoryType, includeArchived = false) {
     return this.db.category.findMany({
       where: {
         userId,
+        deletedAt: null,
         ...(type ? { type } : {}),
         ...(includeArchived ? {} : { isArchived: false }),
       },
-      include: { children: true },
+      include: { children: { where: { deletedAt: null } } },
       orderBy: { name: "asc" },
     });
   }
 
   update(id: string, userId: string, data: UpdateCategoryInput) {
-    return this.db.category.update({ where: { id, userId }, data });
+    return this.db.category.update({ where: { id, userId, deletedAt: null }, data });
   }
 
   delete(id: string, userId: string) {
-    return this.db.category.delete({ where: { id, userId } });
+    return this.db.category.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

@@ -10,19 +10,26 @@ export class BudgetCategoryRepository {
 
   listByBudget(budgetId: string, userId: string) {
     return this.db.budgetCategory.findMany({
-      where: { budgetId, budget: { userId } },
+      where: {
+        budgetId,
+        deletedAt: null,
+        budget: { userId, deletedAt: null },
+        category: { deletedAt: null },
+      },
       include: { category: true },
       orderBy: { createdAt: "asc" },
     });
   }
 
   delete(budgetId: string, categoryId: string, userId: string) {
-    return this.db.budgetCategory.deleteMany({
+    return this.db.budgetCategory.updateMany({
       where: {
         budgetId,
         categoryId,
-        budget: { userId },
+        deletedAt: null,
+        budget: { userId, deletedAt: null },
       },
+      data: { deletedAt: new Date() },
     });
   }
 }

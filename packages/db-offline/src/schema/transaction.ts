@@ -10,7 +10,7 @@ export const transactions = sqliteTable(
   "Transaction",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
     accountId: text("accountId").notNull().references(() => accounts.id, { onDelete: "restrict" }),
     transferAccountId: text("transferAccountId").references(() => accounts.id, { onDelete: "restrict" }),
     categoryId: text("categoryId").references(() => categories.id, { onDelete: "set null" }),
@@ -22,6 +22,7 @@ export const transactions = sqliteTable(
     occurredAt: text("occurredAt").notNull(),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("Transaction_userId_occurredAt_idx").on(table.userId, table.occurredAt),

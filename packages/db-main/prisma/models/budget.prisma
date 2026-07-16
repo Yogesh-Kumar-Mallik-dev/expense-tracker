@@ -1,15 +1,16 @@
 model Budget {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
   name      String
-  amount    Decimal  @db.Decimal(19, 4)
-  currency  String   @db.VarChar(3)
-  startsOn  DateTime @db.Date
-  endsOn    DateTime @db.Date
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  amount    Decimal   @db.Decimal(19, 4)
+  currency  String    @db.VarChar(3)
+  startsOn  DateTime  @db.Date
+  endsOn    DateTime  @db.Date
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   categories BudgetCategory[]
 
   @@unique([userId, name, startsOn, endsOn])

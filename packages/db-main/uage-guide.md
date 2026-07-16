@@ -81,6 +81,13 @@ await accounts.create({
 Database-generated UUIDs and timestamps are used when their input fields are
 omitted.
 
+## Delete records
+
+Repository `delete` methods create a `deletedAt` tombstone; they do not physically
+remove synchronized rows. Repeating a delete is safe. Do not add hard-delete
+cleanup until a backend retention process can prove every client has observed
+the tombstone.
+
 ## Migrations
 
 After changing a model, format and validate before creating a migration:

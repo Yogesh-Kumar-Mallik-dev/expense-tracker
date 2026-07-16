@@ -9,18 +9,21 @@ export class UserRepository {
   }
 
   findById(id: string) {
-    return this.db.user.findUnique({ where: { id } });
+    return this.db.user.findFirst({ where: { id, deletedAt: null } });
   }
 
   findByEmail(email: string) {
-    return this.db.user.findUnique({ where: { email } });
+    return this.db.user.findFirst({ where: { email, deletedAt: null } });
   }
 
   update(id: string, data: UpdateUserInput) {
-    return this.db.user.update({ where: { id }, data });
+    return this.db.user.update({ where: { id, deletedAt: null }, data });
   }
 
   delete(id: string) {
-    return this.db.user.delete({ where: { id } });
+    return this.db.user.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

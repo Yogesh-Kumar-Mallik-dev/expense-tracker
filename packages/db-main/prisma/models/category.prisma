@@ -14,8 +14,9 @@ model Category {
   isArchived Boolean      @default(false)
   createdAt  DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+  deletedAt  DateTime?    @db.Timestamptz(3)
 
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   parent       Category?        @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
   children     Category[]       @relation("CategoryTree")
   budgets      BudgetCategory[]
@@ -27,13 +28,14 @@ model Category {
 }
 
 model BudgetCategory {
-  id         String   @id @default(uuid()) @db.Uuid
-  budgetId   String   @db.Uuid
-  categoryId String   @db.Uuid
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  id         String    @id @default(uuid()) @db.Uuid
+  budgetId   String    @db.Uuid
+  categoryId String    @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  deletedAt  DateTime? @db.Timestamptz(3)
 
-  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@unique([budgetId, categoryId])
   @@index([categoryId])

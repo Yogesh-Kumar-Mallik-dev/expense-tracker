@@ -6,12 +6,13 @@ export const syncStates = sqliteTable(
   "SyncState",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-    deviceId: text("deviceId").notNull().unique().references(() => devices.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
+    deviceId: text("deviceId").notNull().unique().references(() => devices.id, { onDelete: "restrict" }),
     lastSyncedAt: text("lastSyncedAt"),
     checkpoint: text("checkpoint"),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [index("SyncState_userId_idx").on(table.userId)],
 );

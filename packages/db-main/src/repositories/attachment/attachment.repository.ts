@@ -9,17 +9,20 @@ export class AttachmentRepository {
   }
 
   findById(id: string, userId: string) {
-    return this.db.attachment.findFirst({ where: { id, userId } });
+    return this.db.attachment.findFirst({ where: { id, userId, deletedAt: null } });
   }
 
   listByTransaction(transactionId: string, userId: string) {
     return this.db.attachment.findMany({
-      where: { transactionId, userId },
+      where: { transactionId, userId, deletedAt: null },
       orderBy: { createdAt: "asc" },
     });
   }
 
   delete(id: string, userId: string) {
-    return this.db.attachment.delete({ where: { id, userId } });
+    return this.db.attachment.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

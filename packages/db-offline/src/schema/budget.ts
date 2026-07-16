@@ -5,7 +5,7 @@ export const budgets = sqliteTable(
   "Budget",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     amount: text("amount").notNull(),
     currency: text("currency", { length: 3 }).notNull(),
@@ -13,6 +13,7 @@ export const budgets = sqliteTable(
     endsOn: text("endsOn").notNull(),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("Budget_userId_name_startsOn_endsOn_key").on(table.userId, table.name, table.startsOn, table.endsOn),

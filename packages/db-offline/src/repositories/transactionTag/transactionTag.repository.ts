@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { OfflineDatabase } from "../../database";
 import { tags, transactions, transactionTags } from "../../schema";
 import type { CreateTransactionTagInput } from "./transactionTag.types";
@@ -16,7 +16,13 @@ export class TransactionTagRepository {
       .from(transactionTags)
       .innerJoin(transactions, eq(transactionTags.transactionId, transactions.id))
       .innerJoin(tags, eq(transactionTags.tagId, tags.id))
-      .where(and(eq(transactionTags.transactionId, transactionId), eq(transactions.userId, userId)))
+      .where(and(
+        eq(transactionTags.transactionId, transactionId),
+        eq(transactions.userId, userId),
+        isNull(transactionTags.deletedAt),
+        isNull(transactions.deletedAt),
+        isNull(tags.deletedAt),
+      ))
       .orderBy(asc(transactionTags.createdAt));
   }
 
@@ -24,11 +30,12 @@ export class TransactionTagRepository {
     const ownedTransaction = this.db
       .select({ id: transactions.id })
       .from(transactions)
-      .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)));
+      .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId), isNull(transactions.deletedAt)));
 
-    return this.db.delete(transactionTags).where(and(
+    return this.db.update(transactionTags).set({ deletedAt: new Date().toISOString() }).where(and(
       eq(transactionTags.transactionId, transactionId),
       eq(transactionTags.tagId, tagId),
+      isNull(transactionTags.deletedAt),
       eq(transactionTags.transactionId, ownedTransaction),
     ));
   }
