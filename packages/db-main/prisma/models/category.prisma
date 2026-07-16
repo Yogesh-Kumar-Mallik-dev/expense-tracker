@@ -1,0 +1,40 @@
+enum CategoryType {
+  EXPENSE
+  INCOME
+}
+
+model Category {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  parentId   String?      @db.Uuid
+  name       String
+  type       CategoryType @default(EXPENSE)
+  color      String?      @db.VarChar(7)
+  icon       String?
+  isArchived Boolean      @default(false)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Category?        @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[]       @relation("CategoryTree")
+  budgets      BudgetCategory[]
+  transactions Transaction[]
+
+  @@unique([userId, name, type])
+  @@index([userId, type, isArchived])
+  @@index([parentId])
+}
+
+model BudgetCategory {
+  id         String   @id @default(uuid()) @db.Uuid
+  budgetId   String   @db.Uuid
+  categoryId String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, categoryId])
+  @@index([categoryId])
+}

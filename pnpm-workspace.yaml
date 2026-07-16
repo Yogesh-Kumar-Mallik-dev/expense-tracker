@@ -8,7 +8,8 @@ allowBuilds:
   prisma: true
 
 catalog:
-  "@prisma/client": ^6
+  "@prisma/adapter-pg": ^7
+  "@prisma/client": ^7
   "@types/node": ^24.5.2
   argon2: ^0.44
   better-sqlite3: ^12
@@ -18,7 +19,7 @@ catalog:
   hono: ^4
   jsonwebtoken: ^9
   pg: ^8
-  prisma: ^6
+  prisma: ^7
   tsx: ^4
   typescript: ^5
   zod: ^4

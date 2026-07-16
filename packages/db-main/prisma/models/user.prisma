@@ -1,0 +1,19 @@
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  name         String?
+  currency     String   @default("USD") @db.VarChar(3)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  accounts      Account[]
+  attachments   Attachment[]
+  budgets       Budget[]
+  categories    Category[]
+  devices       Device[]
+  refreshTokens RefreshToken[]
+  syncStates    SyncState[]
+  tags          Tag[]
+  transactions  Transaction[]
+}

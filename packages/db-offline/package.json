@@ -1,0 +1,5 @@
+{
+  "name": "@expense-tracker/db-offline",
+  "version": "0.0.0",
+  "private": true
+}

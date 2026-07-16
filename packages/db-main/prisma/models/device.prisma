@@ -1,0 +1,21 @@
+enum DevicePlatform {
+  WEB
+  DESKTOP
+  IOS
+  ANDROID
+}
+
+model Device {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  name       String
+  platform   DevicePlatform
+  lastSeenAt DateTime       @default(now()) @db.Timestamptz(3)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  syncState     SyncState?
+
+  @@index([userId])
+}

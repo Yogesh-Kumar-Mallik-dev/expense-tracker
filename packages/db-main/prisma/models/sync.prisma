@@ -1,0 +1,14 @@
+model SyncState {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  deviceId     String    @unique @db.Uuid
+  lastSyncedAt DateTime? @db.Timestamptz(3)
+  checkpoint   String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
