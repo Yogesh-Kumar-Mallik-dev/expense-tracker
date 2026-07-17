@@ -141,8 +141,8 @@ The project consists of a single backend powering three frontend applications. A
 | Application | Description                                                  |
 | ----------- | ------------------------------------------------------------ |
 | **api**     | Implemented Next.js backend exposing REST and PowerSync APIs |
-| **web**     | Initialized Next.js App Router application                   |
-| **desktop** | Initialized Tauri v2, React, and Vite application            |
+| **web**     | Next.js host for the shared transaction-first frontend       |
+| **desktop** | Tauri v2 host for the shared transaction-first frontend      |
 | **mobile**  | Initialized Expo SDK 57 and NativeWind application           |
 
 ---

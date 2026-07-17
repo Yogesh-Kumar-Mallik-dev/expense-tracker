@@ -8,7 +8,7 @@
     "test:api": "tsx --test api/*.test.ts",
     "test:services": "tsx --test services/*.test.ts",
     "test:logger": "tsx --test logger/*.test.ts",
-    "test:web": "tsx --test web/*.test.ts ui-web/*.test.tsx",
+    "test:web": "tsx --test ui-web/*.test.tsx",
     "test:native": "tsx --test ui-native/*.test.ts",
     "check-types": "tsc --noEmit",
     "lint": "eslint ."
@@ -19,10 +19,14 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "catalog:",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "eslint": "catalog:",
+    "jsdom": "^29.1.1",
     "tsx": "catalog:",
     "typescript": "catalog:"
   }

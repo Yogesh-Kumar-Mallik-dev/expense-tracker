@@ -38,7 +38,7 @@ catalog:
   prisma: ^7
   tsx: ^4
   typescript: ^5
-  zod: ^4
+  zod: ^4.4.3
 
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.9'

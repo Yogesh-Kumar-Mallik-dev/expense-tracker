@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

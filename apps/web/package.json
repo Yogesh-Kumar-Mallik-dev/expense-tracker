@@ -20,10 +20,12 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "catalog:",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "eslint": "catalog:",
+    "postcss": "^8.5.19",
     "typescript": "catalog:"
   }
 }
