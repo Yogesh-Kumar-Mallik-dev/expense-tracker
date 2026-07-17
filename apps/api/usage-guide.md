@@ -309,6 +309,7 @@ curl -i -H "authorization: Bearer $ACCESS_TOKEN" \
 Typical headers are:
 
 ```http
+X-Request-ID: ET-20260717-000001-A1B2
 RateLimit-Limit: 120
 RateLimit-Remaining: 119
 RateLimit-Reset: 1784275260
@@ -317,3 +318,18 @@ RateLimit-Reset: 1784275260
 On `429 Too Many Requests`, wait for the number of seconds in `Retry-After`
 before sending another request. Clients should avoid parallel automatic retries
 that all wake at the same instant; add a small randomized delay.
+
+## Request correlation
+
+Clients may supply a correlation ID:
+
+```sh
+curl -i \
+  -H "X-Request-ID: MOBILE_SYNC_0001" \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  "$API/api/accounts"
+```
+
+The API preserves valid IDs and returns the effective value in `X-Request-ID`.
+Use that value when reporting an error. Error responses also include a linked
+`errorId` when an exception was handled.

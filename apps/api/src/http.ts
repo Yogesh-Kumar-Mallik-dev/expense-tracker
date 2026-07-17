@@ -1,9 +1,16 @@
 import { ZodError } from "zod";
 import {
+  createRequestScope,
+  currentRequest,
+  nextErrorId,
+  runWithRequest,
+} from "@expense-tracker/logger/node";
+import {
   checkRateLimit,
   rateLimitHeaders,
   type RateLimitResult,
 } from "./rate-limit";
+import { apiLogger } from "./logger";
 
 export class HttpError extends Error {
   constructor(
@@ -39,7 +46,7 @@ export async function body(request: Request): Promise<Record<string, unknown>> {
   }
 }
 
-export function handle(error: unknown) {
+export function handle(error: unknown, errorId?: string) {
   if (error instanceof HttpError) {
     return Response.json(
       {
@@ -47,6 +54,7 @@ export function handle(error: unknown) {
           code: error.code,
           message: error.message,
           fields: error.fields,
+          errorId,
         },
       },
       { status: error.status },
@@ -59,6 +67,7 @@ export function handle(error: unknown) {
           code: "VALIDATION_ERROR",
           message: "Request validation failed",
           fields: error.issues.map((issue) => issue.path.join(".")),
+          errorId,
         },
       },
       { status: 400 },
@@ -76,6 +85,7 @@ export function handle(error: unknown) {
           error: {
             code: "CONFLICT",
             message: "A unique record already exists",
+            errorId,
           },
         },
         { status: 409 },
@@ -87,18 +97,19 @@ export function handle(error: unknown) {
           error: {
             code: "MISSING_PARENT",
             message: "A related record does not exist",
+            errorId,
           },
         },
         { status: 409 },
       );
     }
   }
-  console.error(error);
   return Response.json(
     {
       error: {
         code: "INTERNAL_ERROR",
         message: "An unexpected error occurred",
+        errorId,
       },
     },
     { status: 500 },
@@ -110,30 +121,48 @@ export function route<T extends unknown[]>(
 ) {
   return async (...args: T) => {
     const request = args[0];
-    const limit =
-      request instanceof Request ? checkRateLimit(request) : undefined;
-    if (limit && !limit.allowed) {
-      return Response.json(
-        {
-          error: {
-            code: "RATE_LIMITED",
-            message: "Too many requests; retry after the current window",
-          },
-        },
-        {
-          status: 429,
-          headers: {
-            ...rateLimitHeaders(limit),
-            "Retry-After": String(limit.retryAfter),
-          },
-        },
-      );
+    if (!(request instanceof Request)) {
+      try {
+        return await handler(...args);
+      } catch (error) {
+        return handle(error);
+      }
     }
-    try {
-      return withRateLimitHeaders(await handler(...args), limit);
-    } catch (error) {
-      return withRateLimitHeaders(handle(error), limit);
-    }
+    const scope = createRequestScope(request, {
+      trustProxy: process.env.TRUST_PROXY === "true",
+    });
+    return runWithRequest(scope, async () => {
+      const limit = checkRateLimit(request);
+      if (!limit.allowed) {
+        const response = Response.json(
+          {
+            error: {
+              code: "RATE_LIMITED",
+              message: "Too many requests; retry after the current window",
+            },
+          },
+          {
+            status: 429,
+            headers: {
+              ...rateLimitHeaders(limit),
+              "Retry-After": String(limit.retryAfter),
+            },
+          },
+        );
+        return finishLoggedResponse(response, limit, "Request rate limited");
+      }
+      try {
+        const response = withRateLimitHeaders(await handler(...args), limit);
+        return finishLoggedResponse(response, limit);
+      } catch (error) {
+        const errorId = nextErrorId(scope);
+        apiLogger.exception(scope.request, error, errorId, {
+          handler: `${request.method} ${new URL(request.url).pathname}`,
+        });
+        const response = withRateLimitHeaders(handle(error, errorId), limit);
+        return finishLoggedResponse(response, limit, `Error: ${errorId}`);
+      }
+    });
   };
 }
 
@@ -145,5 +174,45 @@ function withRateLimitHeaders(
   for (const [name, value] of Object.entries(rateLimitHeaders(limit))) {
     response.headers.set(name, value);
   }
+  return response;
+}
+
+function finishLoggedResponse(
+  response: Response,
+  limit: RateLimitResult,
+  message?: string,
+) {
+  const scope = currentRequest();
+  if (!scope) return response;
+  const durationMs = performance.now() - scope.request.startedAt;
+  const sizeHeader = response.headers.get("content-length");
+  const sizeBytes =
+    sizeHeader !== null && /^\d+$/.test(sizeHeader) ? Number(sizeHeader) : null;
+  const input = {
+    kind: "request" as const,
+    request: scope.request,
+    response: {
+      status: response.status,
+      durationMs,
+      success: response.status < 400,
+      sizeBytes,
+    },
+    rateLimit: {
+      limit: limit.limit,
+      remaining: limit.remaining,
+      resetAt: limit.resetAt,
+      blocked: !limit.allowed,
+    },
+    handler: `${scope.request.method} ${scope.request.path}`,
+    message:
+      message ??
+      (response.status < 400
+        ? "Request completed"
+        : "Request completed with a client error"),
+  };
+  if (response.status >= 500) apiLogger.error(input);
+  else if (response.status >= 400) apiLogger.warn(input);
+  else apiLogger.success(input);
+  response.headers.set("X-Request-ID", scope.request.requestId);
   return response;
 }

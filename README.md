@@ -121,6 +121,7 @@ The project consists of a single backend powering three frontend applications. A
 ├── packages
 │   ├── db-main/                 # Prisma + PostgreSQL
 │   ├── db-offline/              # Drizzle + SQLite + PowerSync
+│   ├── logger/                  # Shared structured and visual logging
 │   ├── services/                # Shared business logic
 │   └── eslint-config/           # Shared lint configuration
 │
@@ -150,6 +151,7 @@ The project consists of a single backend powering three frontend applications. A
 | **services**      | Shared business logic, validation, repositories, offline operations |
 | **db-main**       | Prisma schema and PostgreSQL access (backend only)                  |
 | **db-offline**    | Drizzle, SQLite, platform drivers, and PowerSync client integration |
+| **logger**        | Boxed logs, JSON export, correlation, and database adapters         |
 | **eslint-config** | Shared ESLint configuration                                         |
 
 ---
@@ -168,6 +170,7 @@ Start with the implemented components:
 - [Shared services](./packages/services/README.md)
 - [Main PostgreSQL database](./packages/db-main/README.md)
 - [Offline SQLite database](./packages/db-offline/README.md)
+- [Shared logger](./packages/logger/README.md)
 
 ---
 

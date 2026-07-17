@@ -157,6 +157,26 @@ shared atomic store such as Redis while preserving the same policy interface.
 The application must only trust `X-Forwarded-For` when deployed behind a proxy
 that overwrites untrusted forwarding headers.
 
+## Logging and correlation
+
+The shared route wrapper creates one request scope and emits one completion
+summary for every endpoint. A valid incoming `X-Request-ID` is preserved;
+otherwise the API generates a sequential expense-tracker ID. The effective ID
+is returned in the response header.
+
+Authentication attaches the current plain `userId` through the logger's
+replaceable transformation hook. Rate-limit state, status, duration, client
+description, source, and memory are included without collecting bodies,
+credentials, raw queries, or database arguments.
+
+Handled route exceptions receive request-derived IDs such as `REQUEST-E01`.
+The logger emits a structured error box, a separate stack box, and a completion
+box referencing that error ID. JSONL receives all three; production terminal
+stacks require `LOG_STACKS=true`.
+
+See `packages/logger/docs.md` for transports, retention, database adapters, and
+the stable structured entry.
+
 ## PowerSync contract
 
 `GET /api/powersync/credentials` returns an endpoint and short-lived token for
@@ -207,6 +227,10 @@ Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
 | `REFRESH_TOKEN_SECRET`   | Refresh-token signing secret, at least 32 characters |
 | `POWERSYNC_URL`          | PowerSync service endpoint                           |
 | `POWERSYNC_TOKEN_SECRET` | PowerSync credential signing secret                  |
+| `LOG_LEVEL`              | Minimum boxed and JSON log severity                  |
+| `LOG_DIRECTORY`          | Rotating JSONL output directory                      |
+| `LOG_STACKS`             | Show stack boxes in the production terminal          |
+| `TRUST_PROXY`            | Trust deployment-overwritten forwarding headers      |
 
 Secrets must not use the example values and must never be exposed to frontend
 bundles.

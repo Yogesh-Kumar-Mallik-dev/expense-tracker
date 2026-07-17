@@ -74,6 +74,9 @@ importers:
       '@expense-tracker/db-main':
         specifier: workspace:*
         version: link:../../packages/db-main
+      '@expense-tracker/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@expense-tracker/services':
         specifier: workspace:*
         version: link:../../packages/services
@@ -203,6 +206,18 @@ importers:
       typescript-eslint:
         specifier: ^8.50.0
         version: 8.50.0(eslint@9.39.1(jiti@2.7.0))(typescript@5.9.2)
+
+  packages/logger:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
 
   packages/services:
     dependencies:

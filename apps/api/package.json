@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@expense-tracker/db-main": "workspace:*",
+    "@expense-tracker/logger": "workspace:*",
     "@expense-tracker/services": "workspace:*",
     "next": "^16.2.0",
     "react": "^19.2.0",
