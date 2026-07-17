@@ -1,0 +1,33 @@
+{
+  "name": "@expense-tracker/ui-native",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./ui-src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./ui-src/index.ts",
+      "react-native": "./ui-src/index.ts",
+      "development": "./ui-src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ui-src"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-native": "0.86.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/react": "^19.2.0",
+    "eslint": "catalog:",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "typescript": "~6.0.3"
+  }
+}

@@ -114,17 +114,20 @@ The project consists of a single backend powering three frontend applications. A
 .
 ├── apps
 │   ├── api/                     # Next.js backend
-│   ├── web/                     # Planned Next.js frontend
-│   ├── desktop/                 # Planned Tauri application
-│   └── mobile/                  # Planned React Native application
+│   ├── web/                     # Initialized Next.js frontend
+│   ├── desktop/                 # Initialized Tauri + React application
+│   └── mobile/                  # Initialized Expo + NativeWind application
 │
 ├── packages
 │   ├── db-main/                 # Prisma + PostgreSQL
 │   ├── db-offline/              # Drizzle + SQLite + PowerSync
 │   ├── logger/                  # Shared structured and visual logging
 │   ├── services/                # Shared business logic
+│   ├── ui-web/                  # Shared Next.js and Tauri UI
+│   ├── ui-native/               # Shared Expo and React Native UI
 │   └── eslint-config/           # Shared lint configuration
 │
+├── tests/                       # Central grouped test workspace
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── turbo.json
@@ -138,9 +141,9 @@ The project consists of a single backend powering three frontend applications. A
 | Application | Description                                                  |
 | ----------- | ------------------------------------------------------------ |
 | **api**     | Implemented Next.js backend exposing REST and PowerSync APIs |
-| **web**     | Planned Next.js web application                              |
-| **desktop** | Planned Tauri desktop application                            |
-| **mobile**  | Planned React Native/Expo application                        |
+| **web**     | Initialized Next.js App Router application                   |
+| **desktop** | Initialized Tauri v2, React, and Vite application            |
+| **mobile**  | Initialized Expo SDK 57 and NativeWind application           |
 
 ---
 
@@ -152,6 +155,8 @@ The project consists of a single backend powering three frontend applications. A
 | **db-main**       | Prisma schema and PostgreSQL access (backend only)                  |
 | **db-offline**    | Drizzle, SQLite, platform drivers, and PowerSync client integration |
 | **logger**        | Boxed logs, JSON export, correlation, and database adapters         |
+| **ui-web**        | Shared DOM components for Next.js and Tauri                         |
+| **ui-native**     | Shared React Native components for Expo                             |
 | **eslint-config** | Shared ESLint configuration                                         |
 
 ---
@@ -161,7 +166,8 @@ The project consists of a single backend powering three frontend applications. A
 - Each TypeScript app or package owns a local `@/*` alias in its `tsconfig.json`.
 - API imports resolve `@/*` from `apps/api`; library imports resolve `@/*` from that package's `src` directory.
 - Cross-package imports use declared workspace package names such as `@expense-tracker/services`. Do not use a local alias to cross a package boundary.
-- `pnpm-workspace.yaml` discovers package projects under `apps/*` and `packages/*`. Deployment-only directories such as `powersync/` are intentionally outside the package graph.
+- `pnpm-workspace.yaml` discovers projects under `apps/*`, `packages/*`, and the root `tests` workspace. Deployment-only directories such as `powersync/` are intentionally outside the package graph.
+- All tests live in the root `tests/` workspace and are grouped by target.
 
 ---
 
@@ -176,6 +182,9 @@ Each application and package contains:
 Start with the implemented components:
 
 - [Next.js API](./apps/api/README.md)
+- [Next.js web](./apps/web/README.md)
+- [Tauri desktop](./apps/desktop/README.md)
+- [Expo mobile](./apps/mobile/README.md)
 - [Shared services](./packages/services/README.md)
 - [Main PostgreSQL database](./packages/db-main/README.md)
 - [Offline SQLite database](./packages/db-offline/README.md)

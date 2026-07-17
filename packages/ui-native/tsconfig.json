@@ -1,0 +1,16 @@
+{
+  "extends": "../../apps/mobile/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./ui-src/*"]
+    },
+    "rootDir": "./ui-src",
+    "outDir": "./dist",
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["ui-src"],
+  "exclude": ["dist", "node_modules"]
+}

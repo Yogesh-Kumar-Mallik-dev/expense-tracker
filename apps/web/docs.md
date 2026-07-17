@@ -1,6 +1,6 @@
 # Web Application Architecture
 
-Status: planned.
+Status: Next.js application initialized; offline bootstrap pending.
 
 The web client will:
 
@@ -14,3 +14,7 @@ The web client will:
 Platform driver imports must remain in web bootstrap code so native mobile and
 Tauri modules cannot enter the web bundle. UI components must not contain
 business rules already owned by `@expense-tracker/services`.
+
+`next.config.ts` transpiles the three local workspace libraries. The app-local
+`@/*` alias resolves from `apps/web`; cross-package code must use the published
+`@expense-tracker/*` names.

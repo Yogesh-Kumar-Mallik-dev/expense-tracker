@@ -1,10 +1,10 @@
 # Web Application Usage Guide
 
-Status: not yet implemented.
+Status: framework initialized.
 
 Before adding features:
 
-1. Scaffold the Next.js workspace package.
+1. Run `pnpm --filter @expense-tracker/web dev`.
 2. Copy PowerSync WASM and worker assets into the public directory.
 3. Initialize one web offline database instance.
 4. Construct shared services with offline adapters.

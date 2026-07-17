@@ -1,0 +1,29 @@
+{
+  "name": "@expense-tracker/tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm run test:api && pnpm run test:services && pnpm run test:logger && pnpm run test:web && pnpm run test:native",
+    "test:api": "tsx --test api/*.test.ts",
+    "test:services": "tsx --test services/*.test.ts",
+    "test:logger": "tsx --test logger/*.test.ts",
+    "test:web": "tsx --test web/*.test.ts ui-web/*.test.tsx",
+    "test:native": "tsx --test ui-native/*.test.ts",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

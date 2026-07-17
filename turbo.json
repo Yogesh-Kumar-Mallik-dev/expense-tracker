@@ -8,6 +8,7 @@
     "LOG_STACKS",
     "NODE_ENV",
     "NO_COLOR",
+    "TAURI_DEV_HOST",
     "TRUST_PROXY"
   ],
   "tasks": {

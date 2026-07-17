@@ -1,7 +1,14 @@
 # Web Application
 
-The Next.js web client is planned but not yet scaffolded. It will use the
-offline database and shared services rather than calling domain APIs directly.
+Initialized Next.js App Router client for the offline-first web experience.
 
-See [docs.md](./docs.md) for its required boundaries and
-[usage-guide.md](./usage-guide.md) for the implementation checklist.
+The application uses TypeScript, React, the shared ESLint configuration, and a
+local `@/*` import alias. Workspace dependencies on `db-offline`, `services`,
+and `logger` are declared explicitly so pnpm's isolated dependency layout
+cannot hide undeclared imports.
+
+Run `pnpm --filter @expense-tracker/web dev` for development or
+`pnpm --filter @expense-tracker/web build` for a production build.
+
+See [docs.md](./docs.md) for boundaries and
+[usage-guide.md](./usage-guide.md) for the next integration steps.

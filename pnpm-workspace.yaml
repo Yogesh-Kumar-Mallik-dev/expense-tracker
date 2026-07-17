@@ -1,6 +1,12 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "tests"
+
+overrides:
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-native: 0.86.0
 
 allowBuilds:
   '@journeyapps/wa-sqlite': true
@@ -33,3 +39,16 @@ catalog:
   tsx: ^4
   typescript: ^5
   zod: ^4
+
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.9'
+  - '@expo/metro-config@57.0.6'
+  - '@expo/prebuild-config@57.0.8'
+  - expo-asset@57.0.6
+  - expo-constants@57.0.6
+  - expo-modules-autolinking@57.0.8
+  - expo-modules-core@57.0.6
+  - expo@57.0.7
+  - expo-dev-client@57.0.7
+  - expo-dev-launcher@57.0.7
+  - expo-dev-menu@57.0.7

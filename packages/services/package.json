@@ -57,15 +57,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "check-types": "tsc --noEmit",
-    "test": "tsc --noEmit -p tsconfig.tests.json && tsx --test tests/*.test.ts"
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "tsx": "catalog:",
     "typescript": "catalog:"
   }
 }

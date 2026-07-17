@@ -1,7 +1,15 @@
 # Mobile Application
 
-The Expo/React Native mobile client is planned but not yet scaffolded. It will
-use the native PowerSync driver and shared offline services.
+Initialized Expo SDK 57 application with React Native, NativeWind, and an Expo
+development client.
 
-See [docs.md](./docs.md) for platform boundaries and
-[usage-guide.md](./usage-guide.md) for the implementation checklist.
+The root pnpm workspace pins React and React Native to one peer context so
+PowerSync and Expo do not produce duplicate native modules under pnpm's
+isolated linker. Metro uses Expo's monorepo-aware defaults and only adds the
+NativeWind transformer. Expo Doctor passes all checks.
+
+Expo Go is not supported because the offline PowerSync driver contains native
+code. Use `pnpm --filter @expense-tracker/mobile android` or the equivalent iOS
+development build, then run `pnpm --filter @expense-tracker/mobile dev`.
+
+See [docs.md](./docs.md) and [usage-guide.md](./usage-guide.md).

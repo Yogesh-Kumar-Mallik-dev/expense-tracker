@@ -1,0 +1,29 @@
+{
+  "name": "@expense-tracker/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expense-tracker/db-offline": "workspace:*",
+    "@expense-tracker/logger": "workspace:*",
+    "@expense-tracker/services": "workspace:*",
+    "@expense-tracker/ui-web": "workspace:*",
+    "next": "^16.2.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}
