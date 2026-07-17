@@ -114,20 +114,15 @@ The project consists of a single backend powering three frontend applications. A
 .
 ├── apps
 │   ├── api/                     # Next.js backend
-│   ├── web/                     # Next.js frontend
-│   ├── desktop/                 # Tauri application
-│   └── mobile/                  # React Native (Expo)
+│   ├── web/                     # Planned Next.js frontend
+│   ├── desktop/                 # Planned Tauri application
+│   └── mobile/                  # Planned React Native application
 │
 ├── packages
-│   ├── api-client/              # Typed backend client
-│   ├── auth/                    # Authentication utilities
 │   ├── db-main/                 # Prisma + PostgreSQL
-│   ├── db-local/                # Drizzle + SQLite
+│   ├── db-offline/              # Drizzle + SQLite + PowerSync
 │   ├── services/                # Shared business logic
-│   ├── sync/                    # PowerSync configuration
-│   ├── types/                   # Shared TypeScript types
-│   ├── ui/                      # Shared UI components
-│   └── utils/                   # Shared utilities
+│   └── eslint-config/           # Shared lint configuration
 │
 ├── package.json
 ├── pnpm-workspace.yaml
@@ -139,28 +134,40 @@ The project consists of a single backend powering three frontend applications. A
 
 # Applications
 
-| Application | Description |
-|-------------|-------------|
-| **api** | Next.js backend exposing REST APIs |
-| **web** | Next.js web application |
-| **desktop** | Tauri desktop application |
-| **mobile** | React Native (Expo) application |
+| Application | Description                                                  |
+| ----------- | ------------------------------------------------------------ |
+| **api**     | Implemented Next.js backend exposing REST and PowerSync APIs |
+| **web**     | Planned Next.js web application                              |
+| **desktop** | Planned Tauri desktop application                            |
+| **mobile**  | Planned React Native/Expo application                        |
 
 ---
 
 # Shared Packages
 
-| Package | Responsibility |
-|----------|----------------|
-| **services** | Shared business logic, validation, repositories, offline operations |
-| **db-main** | Prisma schema and PostgreSQL access (backend only) |
-| **db-local** | Drizzle schema and SQLite access |
-| **api-client** | Type-safe backend client |
-| **sync** | PowerSync configuration |
-| **auth** | Authentication utilities |
-| **types** | Shared TypeScript types |
-| **ui** | Shared UI components |
-| **utils** | Shared helper utilities |
+| Package           | Responsibility                                                      |
+| ----------------- | ------------------------------------------------------------------- |
+| **services**      | Shared business logic, validation, repositories, offline operations |
+| **db-main**       | Prisma schema and PostgreSQL access (backend only)                  |
+| **db-offline**    | Drizzle, SQLite, platform drivers, and PowerSync client integration |
+| **eslint-config** | Shared ESLint configuration                                         |
+
+---
+
+# Documentation
+
+Each application and package contains:
+
+- `README.md` for purpose, status, and quick orientation.
+- `docs.md` for architecture, boundaries, and design decisions.
+- `usage-guide.md` for commands and integration examples.
+
+Start with the implemented components:
+
+- [Next.js API](./apps/api/README.md)
+- [Shared services](./packages/services/README.md)
+- [Main PostgreSQL database](./packages/db-main/README.md)
+- [Offline SQLite database](./packages/db-offline/README.md)
 
 ---
 

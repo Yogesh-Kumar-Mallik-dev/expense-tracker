@@ -99,10 +99,7 @@ database diagnostics, but UI features should consume `AccountService`,
 `TransactionService`, and the other shared domain services as they are added.
 
 ```ts
-import {
-  AccountRepository,
-  TransactionRepository,
-} from "@db-offline";
+import { AccountRepository, TransactionRepository } from "@db-offline";
 
 const accounts = new AccountRepository(offline.db);
 const transactions = new TransactionRepository(offline.db);

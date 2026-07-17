@@ -47,10 +47,7 @@ repository use is intended for service adapters, authentication infrastructure,
 PowerSync upload processing, migrations, and focused administrative work.
 
 ```ts
-import {
-  AccountRepository,
-  TransactionRepository,
-} from "@db-main";
+import { AccountRepository, TransactionRepository } from "@db-main";
 
 const accounts = new AccountRepository();
 const transactions = new TransactionRepository();

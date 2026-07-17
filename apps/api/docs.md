@@ -1,0 +1,178 @@
+# API Architecture
+
+See [README.md](./README.md) for orientation and
+[usage-guide.md](./usage-guide.md) for calling examples.
+
+## Request flow
+
+```text
+HTTP request
+  │
+  ├── auth route ─────────────── Prisma authentication tables
+  │
+  ├── PowerSync upload ───────── one Prisma transaction
+  │
+  └── domain route
+        │
+        ├── bearer-token authentication
+        ├── HTTP input translation
+        ▼
+      shared service
+        │
+        ▼
+      db-main service adapter
+        │
+        ▼
+      Prisma / PostgreSQL
+```
+
+Route Handlers own HTTP, authentication, and authorization. Shared services own
+validation and domain behavior. Main-database adapters own persistence,
+ownership filters, tombstones, and conversion between platform-neutral strings
+and Prisma values.
+
+The backend must never import `@expense-tracker/db-offline`.
+
+## Source structure
+
+```text
+apps/api
+├── app/api                       # Next.js Route Handlers
+│   ├── auth                      # Registration and token lifecycle
+│   ├── powersync                 # Credentials and upload
+│   ├── reporting                 # Computed read models
+│   └── ...                       # Domain resources
+├── src
+│   ├── auth                      # Password and token primitives
+│   ├── env.ts                    # Environment validation
+│   ├── http.ts                   # Response and error mapping
+│   ├── powersync.ts              # Upload validation/application
+│   ├── resources.ts              # Shared resource HTTP translation
+│   └── services.ts               # Service composition root
+└── tests
+```
+
+## Authentication
+
+Passwords are hashed with Node's `scrypt` using a random 16-byte salt. Password
+hashes never leave the server or enter the offline database.
+
+Access tokens are HMAC-SHA256 signed tokens with a 15-minute lifetime. Protected
+routes verify the signature, token type, expiration, and that the user remains
+active.
+
+Refresh tokens have a 30-day lifetime. Only their SHA-256 hashes are stored in
+PostgreSQL. Refreshing revokes the presented token and issues a new token pair,
+preventing normal replay of an already-used refresh token.
+
+Logout requires both an access token and the refresh token to revoke. Profile
+deletion writes a `deletedAt` tombstone; subsequent access-token checks reject
+that user.
+
+Authentication is deliberately separate from `UserService`, whose scope is
+shared profile behavior.
+
+## Authorization
+
+The authenticated token is the sole source of `userId`. Domain request bodies
+cannot select another owner; the backend overwrites any supplied `userId`.
+
+Service adapters constrain normal reads, updates, and deletes by owner.
+Assignment creation additionally verifies that both related records are
+visible to the authenticated user before creating a join row.
+
+Ownership-safe lookup failures return `404`, avoiding disclosure of whether
+another user owns a given UUID.
+
+## Domain and representation rules
+
+- IDs are UUID strings.
+- Timestamps use ISO 8601 strings at service and HTTP boundaries.
+- Budget dates use `YYYY-MM-DD`.
+- Money is always a decimal string and is never converted through JavaScript
+  floating-point arithmetic.
+- Synchronized deletes are idempotent tombstone writes.
+- Transactions, tag assignments, and attachments remain independent row
+  operations.
+- Reports derive balances and usage from all non-tombstoned source rows; they
+  do not persist counters.
+- Mixed-currency report rows expose `excludedTransactionIds`.
+
+## HTTP errors
+
+| Condition                  | Status | Typical code               |
+| -------------------------- | -----: | -------------------------- |
+| Malformed JSON             |    400 | `INVALID_JSON`             |
+| Invalid input              |    400 | `VALIDATION_ERROR`         |
+| Missing credentials        |    401 | `UNAUTHORIZED`             |
+| Invalid login              |    401 | `INVALID_CREDENTIALS`      |
+| Ownership-safe absence     |    404 | `NOT_FOUND`                |
+| Unique database constraint |    409 | `CONFLICT`                 |
+| Missing related record     |    409 | `MISSING_PARENT`           |
+| PowerSync unavailable      |    503 | `POWERSYNC_NOT_CONFIGURED` |
+| Unexpected failure         |    500 | `INTERNAL_ERROR`           |
+
+Validation errors may include a `fields` array. Internal exceptions are logged
+on the server but are not returned to clients.
+
+## PowerSync contract
+
+`GET /api/powersync/credentials` returns an endpoint and short-lived token for
+the authenticated user. It returns `503` until PowerSync environment variables
+are configured.
+
+`POST /api/powersync/upload` accepts:
+
+```json
+{
+  "operations": [
+    {
+      "op": "PUT",
+      "table": "Account",
+      "id": "uuid",
+      "data": {}
+    }
+  ]
+}
+```
+
+The upload boundary:
+
+- accepts at most 1,000 operations per batch;
+- allowlists synchronized table names and `PUT`, `PATCH`, and `DELETE`;
+- preserves client-generated row UUIDs;
+- rejects cross-user ownership;
+- prevents offline creation of authentication users;
+- strips server-only `passwordHash`;
+- converts documented date fields to Prisma dates;
+- turns `DELETE` into `deletedAt`;
+- commits the complete operation list inside one `prisma.$transaction`.
+
+If any operation fails, the transaction rolls back and the PowerSync client
+keeps the local CRUD transaction queued. Unique violations become HTTP `409`
+responses and should enter a permanent rename/merge recovery flow rather than
+being retried forever.
+
+## Environment and runtime
+
+The backend uses the Node.js runtime because Prisma, PostgreSQL, `scrypt`, and
+Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
+
+| Variable                 | Purpose                                              |
+| ------------------------ | ---------------------------------------------------- |
+| `DATABASE_URL`           | PostgreSQL connection used by Prisma                 |
+| `ACCESS_TOKEN_SECRET`    | Access-token signing secret, at least 32 characters  |
+| `REFRESH_TOKEN_SECRET`   | Refresh-token signing secret, at least 32 characters |
+| `POWERSYNC_URL`          | PowerSync service endpoint                           |
+| `POWERSYNC_TOKEN_SECRET` | PowerSync credential signing secret                  |
+
+Secrets must not use the example values and must never be exposed to frontend
+bundles.
+
+## Known integration boundary
+
+The current PowerSync credential token is an HMAC JWT produced by this backend.
+Before production deployment, its claims and signing configuration must be
+matched to the selected PowerSync deployment's token-verification settings.
+Binary attachment storage is also external to this API; the current attachment
+routes persist metadata only.
