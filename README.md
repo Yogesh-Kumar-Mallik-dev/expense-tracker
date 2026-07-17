@@ -304,11 +304,27 @@ pnpm install
 pnpm dev
 ```
 
+Run one development target from the repository root:
+
+```bash
+pnpm dev:api          # Next.js API on http://localhost:3001
+pnpm dev:web          # Next.js web app on http://localhost:3000
+pnpm dev:desktop      # Vite renderer on http://localhost:1420
+pnpm dev:tauri        # Complete Tauri desktop application
+pnpm dev:mobile       # Expo development client
+pnpm dev:mobile:web   # Expo web
+pnpm dev:mobile:android
+pnpm dev:mobile:ios
+```
+
 ## Build
 
 ```bash
 pnpm build
 ```
+
+Targeted builds are available as `pnpm build:api`, `pnpm build:web`,
+`pnpm build:desktop`, `pnpm build:tauri`, and `pnpm build:mobile`.
 
 ## Type checking
 

@@ -35,7 +35,7 @@ pnpm --filter @expense-tracker/db-main generate
 pnpm --filter @expense-tracker/api dev
 ```
 
-The API is served at `http://localhost:3000` by default. A working PostgreSQL
+The API is served at `http://localhost:3001` by default. A working PostgreSQL
 database and valid secrets are required.
 
 ## Commands

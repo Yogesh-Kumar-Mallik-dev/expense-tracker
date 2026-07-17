@@ -29,7 +29,7 @@ pnpm --filter @expense-tracker/api build
 The examples below assume:
 
 ```sh
-API=http://localhost:3000
+API=http://localhost:3001
 ```
 
 ## Health
