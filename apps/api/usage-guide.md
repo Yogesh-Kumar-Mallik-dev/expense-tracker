@@ -114,7 +114,23 @@ List active accounts:
 
 ```sh
 curl -H "authorization: Bearer $ACCESS_TOKEN" \
-  "$API/api/accounts"
+  "$API/api/accounts?page=1&pageSize=25"
+```
+
+The result includes:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 0,
+    "totalPages": 0,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
 ```
 
 Include archived accounts:
@@ -198,7 +214,7 @@ Filter the list:
 
 ```sh
 curl -H "authorization: Bearer $ACCESS_TOKEN" \
-  "$API/api/transactions?accountId=$ACCOUNT_ID&from=2026-07-01T00%3A00%3A00.000Z&to=2026-07-31T23%3A59%3A59.999Z&limit=50"
+  "$API/api/transactions?accountId=$ACCOUNT_ID&from=2026-07-01T00%3A00%3A00.000Z&to=2026-07-31T23%3A59%3A59.999Z&page=1&pageSize=50"
 ```
 
 Assign a tag independently:
@@ -280,3 +296,24 @@ curl -X POST "$API/api/powersync/upload" \
 Only complete the local PowerSync transaction after a successful HTTP response.
 Retry network and server failures. Treat `409` uniqueness conflicts as permanent
 until the user chooses a rename or merge recovery.
+
+## Rate-limit responses
+
+Inspect rate-limit metadata on any response:
+
+```sh
+curl -i -H "authorization: Bearer $ACCESS_TOKEN" \
+  "$API/api/accounts"
+```
+
+Typical headers are:
+
+```http
+RateLimit-Limit: 120
+RateLimit-Remaining: 119
+RateLimit-Reset: 1784275260
+```
+
+On `429 Too Many Requests`, wait for the number of seconds in `Retry-After`
+before sending another request. Clients should avoid parallel automatic retries
+that all wake at the same instant; add a small randomized delay.

@@ -1,4 +1,9 @@
 import { ZodError } from "zod";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+  type RateLimitResult,
+} from "./rate-limit";
 
 export class HttpError extends Error {
   constructor(
@@ -11,8 +16,10 @@ export class HttpError extends Error {
   }
 }
 
-export function ok<T>(data: T, status = 200) {
-  return Response.json({ data }, { status });
+export function ok<T, TMeta = never>(data: T, status = 200, meta?: TMeta) {
+  return Response.json(meta === undefined ? { data } : { data, meta }, {
+    status,
+  });
 }
 
 export function empty() {
@@ -35,7 +42,13 @@ export async function body(request: Request): Promise<Record<string, unknown>> {
 export function handle(error: unknown) {
   if (error instanceof HttpError) {
     return Response.json(
-      { error: { code: error.code, message: error.message, fields: error.fields } },
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          fields: error.fields,
+        },
+      },
       { status: error.status },
     );
   }
@@ -59,20 +72,35 @@ export function handle(error: unknown) {
   ) {
     if (error.code === "P2002") {
       return Response.json(
-        { error: { code: "CONFLICT", message: "A unique record already exists" } },
+        {
+          error: {
+            code: "CONFLICT",
+            message: "A unique record already exists",
+          },
+        },
         { status: 409 },
       );
     }
     if (error.code === "P2003") {
       return Response.json(
-        { error: { code: "MISSING_PARENT", message: "A related record does not exist" } },
+        {
+          error: {
+            code: "MISSING_PARENT",
+            message: "A related record does not exist",
+          },
+        },
         { status: 409 },
       );
     }
   }
   console.error(error);
   return Response.json(
-    { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected error occurred",
+      },
+    },
     { status: 500 },
   );
 }
@@ -81,10 +109,41 @@ export function route<T extends unknown[]>(
   handler: (...args: T) => Promise<Response>,
 ) {
   return async (...args: T) => {
+    const request = args[0];
+    const limit =
+      request instanceof Request ? checkRateLimit(request) : undefined;
+    if (limit && !limit.allowed) {
+      return Response.json(
+        {
+          error: {
+            code: "RATE_LIMITED",
+            message: "Too many requests; retry after the current window",
+          },
+        },
+        {
+          status: 429,
+          headers: {
+            ...rateLimitHeaders(limit),
+            "Retry-After": String(limit.retryAfter),
+          },
+        },
+      );
+    }
     try {
-      return await handler(...args);
+      return withRateLimitHeaders(await handler(...args), limit);
     } catch (error) {
-      return handle(error);
+      return withRateLimitHeaders(handle(error), limit);
     }
   };
+}
+
+function withRateLimitHeaders(
+  response: Response,
+  limit: RateLimitResult | undefined,
+) {
+  if (!limit) return response;
+  for (const [name, value] of Object.entries(rateLimitHeaders(limit))) {
+    response.headers.set(name, value);
+  }
+  return response;
 }

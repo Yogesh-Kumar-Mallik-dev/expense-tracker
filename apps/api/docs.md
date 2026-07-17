@@ -109,11 +109,53 @@ another user owns a given UUID.
 | Ownership-safe absence     |    404 | `NOT_FOUND`                |
 | Unique database constraint |    409 | `CONFLICT`                 |
 | Missing related record     |    409 | `MISSING_PARENT`           |
+| Rate limit exceeded        |    429 | `RATE_LIMITED`             |
 | PowerSync unavailable      |    503 | `POWERSYNC_NOT_CONFIGURED` |
 | Unexpected failure         |    500 | `INTERNAL_ERROR`           |
 
 Validation errors may include a `fields` array. Internal exceptions are logged
 on the server but are not returned to clients.
+
+## Pagination
+
+Every collection and assignment-list endpoint accepts:
+
+- `page`: one-based page number, default `1`;
+- `pageSize`: rows per page, default `25`, maximum `100`;
+- `limit`: compatibility alias for `pageSize`.
+
+The response `meta` object contains `page`, `pageSize`, `total`, `totalPages`,
+`hasNext`, and `hasPrevious`. An empty result has `totalPages: 0`. Invalid,
+zero, negative, non-integer, and excessive values return
+`400 INVALID_PAGINATION`.
+
+Pagination is intentionally not applied inside `ReportingService`. Reports must
+read every matching source row or their balances and budget usage would be
+incorrect.
+
+## Rate limiting
+
+The shared Route Handler wrapper applies a fixed 60-second window:
+
+| Route policy          | Requests per window |
+| --------------------- | ------------------: |
+| Authentication routes |                  10 |
+| PowerSync upload      |                  30 |
+| Health                |                 300 |
+| Other API routes      |                 120 |
+
+Buckets use the client address, which means changing an invalid bearer token
+cannot bypass pre-authentication protection. Responses include
+`RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset`, together with
+equivalent `X-RateLimit-*` compatibility headers. Rejected requests also
+include `Retry-After`.
+
+The current store is process-local and deliberately dependency-free. It is
+useful for local development and a single long-running API instance. A
+multi-instance or serverless production deployment must replace the map with a
+shared atomic store such as Redis while preserving the same policy interface.
+The application must only trust `X-Forwarded-For` when deployed behind a proxy
+that overwrites untrusted forwarding headers.
 
 ## PowerSync contract
 

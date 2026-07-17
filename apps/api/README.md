@@ -61,6 +61,22 @@ Successful JSON responses use:
 { "data": {} }
 ```
 
+Collection responses also include pagination metadata:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 0,
+    "totalPages": 0,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
+```
+
 Failures use:
 
 ```json
@@ -75,6 +91,13 @@ Failures use:
 
 Delete and update operations that do not return a representation respond with
 `204 No Content`.
+
+Collection endpoints accept `page` and `pageSize`; the default page size is 25
+and the maximum is 100. The older `limit` name is accepted as an alias for
+`pageSize`.
+
+Every API response includes rate-limit headers. Exceeding a policy returns
+`429 Too Many Requests` with `Retry-After`.
 
 ## Route groups
 
