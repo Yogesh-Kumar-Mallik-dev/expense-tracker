@@ -76,7 +76,7 @@ The project consists of a single backend powering three frontend applications. A
                                    PowerSync Cloud
                                           ▲
                                           │
-═══════════════════════════════════════════════════════════════════════
+        ═══════════════════════════════════════════════════════════════════════
                                           │
                                    PowerSync Client
                                           │
