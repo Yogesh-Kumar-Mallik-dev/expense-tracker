@@ -1,6 +1,15 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "DATABASE_URL",
+    "LOG_DIRECTORY",
+    "LOG_LEVEL",
+    "LOG_STACKS",
+    "NODE_ENV",
+    "NO_COLOR",
+    "TRUST_PROXY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

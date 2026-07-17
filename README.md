@@ -156,6 +156,15 @@ The project consists of a single backend powering three frontend applications. A
 
 ---
 
+# Imports and workspace boundaries
+
+- Each TypeScript app or package owns a local `@/*` alias in its `tsconfig.json`.
+- API imports resolve `@/*` from `apps/api`; library imports resolve `@/*` from that package's `src` directory.
+- Cross-package imports use declared workspace package names such as `@expense-tracker/services`. Do not use a local alias to cross a package boundary.
+- `pnpm-workspace.yaml` discovers package projects under `apps/*` and `packages/*`. Deployment-only directories such as `powersync/` are intentionally outside the package graph.
+
+---
+
 # Documentation
 
 Each application and package contains:

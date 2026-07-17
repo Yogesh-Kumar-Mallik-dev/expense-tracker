@@ -25,6 +25,7 @@ catalog:
   dotenv: ^17
   drizzle-kit: ^0.31
   drizzle-orm: ^0.44
+  eslint: ^9.39.1
   hono: ^4
   jsonwebtoken: ^9
   pg: ^8
