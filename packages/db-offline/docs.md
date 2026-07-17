@@ -89,6 +89,11 @@ let the user rename or merge it; services must not use check-then-insert.
 Credential providers must return a PowerSync endpoint and short-lived token.
 Returning `null` indicates that no user is signed in.
 
+Attachment rows synchronize metadata only. Binary files use the API's
+presigned object-storage lifecycle. An offline client retains its preassigned
+attachment UUID, requests an upload URL with that UUID when online, uploads the
+bytes, and completes verification without recreating the transaction.
+
 ## Service-layer boundary
 
 UI code should call `packages/services` rather than placing business rules in

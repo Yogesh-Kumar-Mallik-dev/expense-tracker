@@ -1,9 +1,12 @@
 import {
   createHash,
   createHmac,
+  createPrivateKey,
+  createPublicKey,
   randomBytes,
   scrypt as scryptCallback,
   timingSafeEqual,
+  sign,
 } from "node:crypto";
 import { promisify } from "node:util";
 
@@ -39,11 +42,10 @@ type TokenPayload = {
   jti?: string;
 };
 
-export function signToken(
-  payload: Omit<TokenPayload, "iat">,
-  secret: string,
-) {
-  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+export function signToken(payload: Omit<TokenPayload, "iat">, secret: string) {
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
   const claims = Buffer.from(
     JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000) }),
   ).toString("base64url");
@@ -64,7 +66,8 @@ export function verifyToken(
     .update(`${header}.${claims}`)
     .digest();
   const actual = Buffer.from(signature, "base64url");
-  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected))
+    return null;
   try {
     const payload = JSON.parse(
       Buffer.from(claims, "base64url").toString("utf8"),
@@ -73,9 +76,34 @@ export function verifyToken(
       payload.type !== type ||
       typeof payload.sub !== "string" ||
       payload.exp <= Math.floor(Date.now() / 1000)
-    ) return null;
+    )
+      return null;
     return payload;
   } catch {
     return null;
   }
+}
+
+export function signRs256Token(
+  payload: Record<string, unknown>,
+  privateKeyPem: string,
+  keyId: string,
+) {
+  const header = Buffer.from(
+    JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId }),
+  ).toString("base64url");
+  const claims = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = sign(
+    "RSA-SHA256",
+    Buffer.from(`${header}.${claims}`),
+    createPrivateKey(privateKeyPem),
+  ).toString("base64url");
+  return `${header}.${claims}.${signature}`;
+}
+
+export function publicJwk(privateKeyPem: string, keyId: string) {
+  const key = createPublicKey(createPrivateKey(privateKeyPem)).export({
+    format: "jwk",
+  });
+  return { ...key, use: "sig", alg: "RS256", kid: keyId };
 }

@@ -171,6 +171,7 @@ Start with the implemented components:
 - [Main PostgreSQL database](./packages/db-main/README.md)
 - [Offline SQLite database](./packages/db-offline/README.md)
 - [Shared logger](./packages/logger/README.md)
+- [PowerSync deployment](./powersync/README.md)
 
 ---
 

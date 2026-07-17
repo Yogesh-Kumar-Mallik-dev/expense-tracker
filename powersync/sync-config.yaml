@@ -1,0 +1,65 @@
+config:
+  edition: 3
+
+streams:
+  my_profile:
+    auto_subscribe: true
+    query: |
+      SELECT
+        id,
+        email,
+        name,
+        currency,
+        "createdAt",
+        "updatedAt",
+        "deletedAt"
+      FROM "User"
+      WHERE id = auth.user_id()
+
+  my_accounts:
+    auto_subscribe: true
+    query: SELECT * FROM "Account" WHERE "userId" = auth.user_id()
+
+  my_categories:
+    auto_subscribe: true
+    query: SELECT * FROM "Category" WHERE "userId" = auth.user_id()
+
+  my_budgets:
+    auto_subscribe: true
+    query: SELECT * FROM "Budget" WHERE "userId" = auth.user_id()
+
+  my_budget_categories:
+    auto_subscribe: true
+    query: |
+      SELECT assignment.*
+      FROM "BudgetCategory" AS assignment
+      JOIN "Budget" AS budget ON budget.id = assignment."budgetId"
+      WHERE budget."userId" = auth.user_id()
+
+  my_transactions:
+    auto_subscribe: true
+    query: SELECT * FROM "Transaction" WHERE "userId" = auth.user_id()
+
+  my_tags:
+    auto_subscribe: true
+    query: SELECT * FROM "Tag" WHERE "userId" = auth.user_id()
+
+  my_transaction_tags:
+    auto_subscribe: true
+    query: |
+      SELECT assignment.*
+      FROM "TransactionTag" AS assignment
+      JOIN "Transaction" AS transaction ON transaction.id = assignment."transactionId"
+      WHERE transaction."userId" = auth.user_id()
+
+  my_attachments:
+    auto_subscribe: true
+    query: SELECT * FROM "Attachment" WHERE "userId" = auth.user_id()
+
+  my_devices:
+    auto_subscribe: true
+    query: SELECT * FROM "Device" WHERE "userId" = auth.user_id()
+
+  my_sync_states:
+    auto_subscribe: true
+    query: SELECT * FROM "SyncState" WHERE "userId" = auth.user_id()

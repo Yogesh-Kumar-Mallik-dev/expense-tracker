@@ -8,7 +8,11 @@ const schema = z.object({
   email: z.email().transform((value) => value.toLowerCase()),
   password: z.string().min(12).max(200),
   name: z.string().trim().min(1).max(120).nullable().optional(),
-  currency: z.string().length(3).transform((value) => value.toUpperCase()).default("USD"),
+  currency: z
+    .string()
+    .length(3)
+    .transform((value) => value.toUpperCase())
+    .default("USD"),
 });
 
 export const runtime = "nodejs";

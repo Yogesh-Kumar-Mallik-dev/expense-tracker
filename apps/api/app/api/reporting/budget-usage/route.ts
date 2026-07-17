@@ -7,6 +7,7 @@ export const GET = route(async (request: Request) => {
   const url = new URL(request.url);
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
-  if (!from || !to) throw new HttpError(400, "MISSING_PERIOD", "from and to are required");
+  if (!from || !to)
+    throw new HttpError(400, "MISSING_PERIOD", "from and to are required");
   return ok(await services.reporting.budgetUsage(userId, from, to));
 });

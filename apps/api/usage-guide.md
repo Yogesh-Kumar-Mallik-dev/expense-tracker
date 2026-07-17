@@ -232,26 +232,80 @@ pending metadata operation.
 
 ## Attachments
 
-Attachment endpoints store metadata, not binary data:
+Request an upload:
 
 ```sh
-curl -X POST "$API/api/attachments" \
+curl -X POST "$API/api/attachments/upload" \
   -H "authorization: Bearer $ACCESS_TOKEN" \
   -H "content-type: application/json" \
   -d "{
     \"transactionId\":\"$TRANSACTION_ID\",
     \"fileName\":\"receipt.jpg\",
-    \"storageKey\":\"users/example/receipt.jpg\",
     \"mimeType\":\"image/jpeg\",
     \"sizeBytes\":204800
   }"
 ```
+
+Upload the bytes directly to `data.uploadUrl`, using every header returned in
+`data.headers`. Then confirm the object:
+
+```sh
+curl -X POST "$API/api/attachments/complete" \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d "{
+    \"attachmentId\":\"$ATTACHMENT_ID\",
+    \"transactionId\":\"$TRANSACTION_ID\",
+    \"fileName\":\"receipt.jpg\",
+    \"storageKey\":\"$STORAGE_KEY\",
+    \"mimeType\":\"image/jpeg\",
+    \"sizeBytes\":204800
+  }"
+```
+
+Completion checks object existence, size, content type, transaction ownership,
+and the backend-generated storage key before creating metadata.
 
 List metadata for one transaction:
 
 ```sh
 curl -H "authorization: Bearer $ACCESS_TOKEN" \
   "$API/api/attachments?transactionId=$TRANSACTION_ID"
+```
+
+Request a short-lived download:
+
+```sh
+curl -H "authorization: Bearer $ACCESS_TOKEN" \
+  "$API/api/attachments/$ATTACHMENT_ID/download"
+```
+
+For offline-created metadata, pass its existing UUID as `attachmentId` when
+requesting the upload. Completion is idempotent if that owned metadata row has
+already synchronized.
+
+## PowerSync production setup
+
+Generate a 2048-bit RSA key and encode the private PEM for the API environment:
+
+```sh
+openssl genpkey -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:2048 \
+  -out powersync-private.pem
+
+base64 -w 0 powersync-private.pem
+```
+
+Configure the PowerSync instance with:
+
+- JWKS URI: `https://<api-host>/api/auth/keys`
+- audience: the exact `POWERSYNC_AUDIENCE` value
+- Sync Streams: `powersync/sync-config.yaml`
+
+Validate before deployment:
+
+```sh
+powersync validate
 ```
 
 ## Reporting

@@ -10,6 +10,8 @@
     "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1088.0",
+    "@aws-sdk/s3-request-presigner": "^3.1088.0",
     "@expense-tracker/db-main": "workspace:*",
     "@expense-tracker/logger": "workspace:*",
     "@expense-tracker/services": "workspace:*",

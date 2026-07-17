@@ -1,5 +1,9 @@
 import { createResource, listResource } from "../../../src/resources";
 import { route } from "../../../src/http";
 export const runtime = "nodejs";
-export const GET = route((request: Request) => listResource("transactions", request));
-export const POST = route((request: Request) => createResource("transactions", request));
+export const GET = route((request: Request) =>
+  listResource("transactions", request),
+);
+export const POST = route((request: Request) =>
+  createResource("transactions", request),
+);

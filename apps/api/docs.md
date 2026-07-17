@@ -183,6 +183,11 @@ the stable structured entry.
 the authenticated user. It returns `503` until PowerSync environment variables
 are configured.
 
+Tokens use RS256, include `kid`, `sub`, `aud`, `iss`, `iat`, and `exp`, and
+expire after five minutes. `GET /api/auth/keys` publishes the matching public
+JWKS without exposing private key material. The checked-in
+`powersync/sync-config.yaml` uses edition 3 user-scoped Sync Streams.
+
 `POST /api/powersync/upload` accepts:
 
 ```json
@@ -220,25 +225,48 @@ being retried forever.
 The backend uses the Node.js runtime because Prisma, PostgreSQL, `scrypt`, and
 Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
 
-| Variable                 | Purpose                                              |
-| ------------------------ | ---------------------------------------------------- |
-| `DATABASE_URL`           | PostgreSQL connection used by Prisma                 |
-| `ACCESS_TOKEN_SECRET`    | Access-token signing secret, at least 32 characters  |
-| `REFRESH_TOKEN_SECRET`   | Refresh-token signing secret, at least 32 characters |
-| `POWERSYNC_URL`          | PowerSync service endpoint                           |
-| `POWERSYNC_TOKEN_SECRET` | PowerSync credential signing secret                  |
-| `LOG_LEVEL`              | Minimum boxed and JSON log severity                  |
-| `LOG_DIRECTORY`          | Rotating JSONL output directory                      |
-| `LOG_STACKS`             | Show stack boxes in the production terminal          |
-| `TRUST_PROXY`            | Trust deployment-overwritten forwarding headers      |
+| Variable                       | Purpose                                             |
+| ------------------------------ | --------------------------------------------------- |
+| `DATABASE_URL`                 | PostgreSQL connection used by Prisma                |
+| `ACCESS_TOKEN_SECRET`          | Access-token signing secret, at least 32 characters |
+| `REFRESH_TOKEN_SECRET`         | Refresh-token signing secret                        |
+| `POWERSYNC_URL`                | PowerSync service endpoint                          |
+| `POWERSYNC_PRIVATE_KEY_BASE64` | Base64-encoded RSA private-key PEM                  |
+| `POWERSYNC_KEY_ID`             | JWT/JWKS key identifier                             |
+| `POWERSYNC_AUDIENCE`           | Audience configured in PowerSync                    |
+| `POWERSYNC_ISSUER`             | Token issuer identifying this API                   |
+| `ATTACHMENT_BUCKET`            | Private S3-compatible object bucket                 |
+| `ATTACHMENT_REGION`            | Object-storage region                               |
+| `ATTACHMENT_ENDPOINT`          | Optional S3-compatible endpoint                     |
+| `ATTACHMENT_FORCE_PATH_STYLE`  | Enable path-style compatible-store requests         |
+| `ATTACHMENT_ACCESS_KEY_ID`     | Optional static storage access key                  |
+| `ATTACHMENT_SECRET_ACCESS_KEY` | Optional static storage secret                      |
+| `ATTACHMENT_MAX_BYTES`         | Maximum accepted object size                        |
+| `LOG_LEVEL`                    | Minimum boxed and JSON log severity                 |
+| `LOG_DIRECTORY`                | Rotating JSONL output directory                     |
+| `LOG_STACKS`                   | Show stack boxes in the production terminal         |
+| `TRUST_PROXY`                  | Trust deployment-overwritten forwarding headers     |
 
 Secrets must not use the example values and must never be exposed to frontend
 bundles.
 
-## Known integration boundary
+## Attachment binary lifecycle
 
-The current PowerSync credential token is an HMAC JWT produced by this backend.
-Before production deployment, its claims and signing configuration must be
-matched to the selected PowerSync deployment's token-verification settings.
-Binary attachment storage is also external to this API; the current attachment
-routes persist metadata only.
+Object storage is private and S3-compatible. The API never proxies binary
+payloads through Next.js:
+
+1. `POST /api/attachments/upload` validates transaction ownership, size, and
+   metadata and returns a short-lived signed `PUT` URL.
+2. The client uploads directly with the exact signed headers.
+3. `POST /api/attachments/complete` verifies the object with `HeadObject` and
+   only then persists attachment metadata.
+4. `GET /api/attachments/:id/download` verifies ownership and returns a
+   short-lived signed `GET` URL.
+
+Storage keys are generated beneath user, transaction, and attachment UUID
+prefixes. Completion rejects keys that do not exactly match this structure. The
+default size limit is 10 MiB.
+
+Synchronized metadata tombstones do not immediately remove binary objects.
+Production operations should run delayed garbage collection only after the
+tombstone-retention window proves every client has observed deletion.

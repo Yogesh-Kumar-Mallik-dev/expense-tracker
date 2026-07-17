@@ -38,7 +38,9 @@ export const services = {
   transactionTags: new TransactionTagService(new MainTransactionTagAdapter()),
   users: new UserService(
     new MainUserAdapter(async () => {
-      throw new Error("User credentials must be created through the auth routes");
+      throw new Error(
+        "User credentials must be created through the auth routes",
+      );
     }),
   ),
 };

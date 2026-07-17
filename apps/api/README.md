@@ -105,8 +105,10 @@ Every API response includes rate-limit headers. Exceeding a policy returns
 | -------------- | ------------------------------------------------------------------------------------------------ |
 | Health         | `/api/health`                                                                                    |
 | Authentication | `/api/auth/register`, `/login`, `/refresh`, `/logout`                                            |
+| Public keys    | `/api/auth/keys`                                                                                 |
 | Profile        | `/api/users/me`                                                                                  |
 | Domains        | `/api/accounts`, `/categories`, `/tags`, `/budgets`, `/transactions`, `/attachments`, `/devices` |
 | Assignments    | `/api/budgets/:id/categories`, `/api/transactions/:id/tags`                                      |
 | Reporting      | `/api/reporting/account-balances`, `/api/reporting/budget-usage`                                 |
 | PowerSync      | `/api/powersync/credentials`, `/api/powersync/upload`                                            |
+| Binary files   | `/api/attachments/upload`, `/complete`, `/:id/download`                                          |

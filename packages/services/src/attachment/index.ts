@@ -15,7 +15,7 @@ export interface AttachmentRecord {
 export type CreateAttachmentInput = Omit<
   AttachmentRecord,
   "id" | "createdAt" | "deletedAt"
->;
+> & { id?: string };
 export interface AttachmentRepositoryPort {
   create(v: AttachmentRecord): Promise<unknown>;
   findById(id: string, userId: string): Promise<AttachmentRecord | null>;
@@ -26,6 +26,7 @@ export interface AttachmentRepositoryPort {
   delete(id: string, userId: string): Promise<unknown>;
 }
 const schema = z.object({
+  id: z.uuid().optional(),
   userId: z.uuid(),
   transactionId: z.uuid(),
   fileName: z.string().trim().min(1).max(255),
@@ -42,9 +43,10 @@ export class AttachmentService {
   // Concurrency note: Safe single-row metadata insert with a preassigned UUID; binary upload lifecycle is independent and recoverable.
   async create(input: CreateAttachmentInput) {
     const v = schema.parse(input);
+    const { id, ...metadata } = v;
     const record: AttachmentRecord = {
-      id: parseUuid(this.idFactory()),
-      ...v,
+      id: id ? parseUuid(id) : parseUuid(this.idFactory()),
+      ...metadata,
       createdAt: this.clock(),
       deletedAt: null,
     };

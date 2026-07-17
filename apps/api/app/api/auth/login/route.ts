@@ -17,10 +17,19 @@ export const POST = route(async (request: Request) => {
     where: { email: input.email, deletedAt: null },
   });
   if (!user || !(await verifyPassword(input.password, user.passwordHash))) {
-    throw new HttpError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
+    throw new HttpError(
+      401,
+      "INVALID_CREDENTIALS",
+      "Email or password is incorrect",
+    );
   }
   return ok({
-    user: { id: user.id, email: user.email, name: user.name, currency: user.currency },
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      currency: user.currency,
+    },
     tokens: await issueTokens(user.id, input.deviceId),
   });
 });

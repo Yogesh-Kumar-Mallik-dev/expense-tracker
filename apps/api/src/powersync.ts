@@ -53,8 +53,14 @@ const delegateNames = {
 const immutable = new Set(["id", "userId", "createdAt"]);
 const serverOnly = new Set(["passwordHash"]);
 const dateFields = new Set([
-  "createdAt", "updatedAt", "deletedAt", "occurredAt", "startsOn", "endsOn",
-  "lastSeenAt", "lastSyncedAt",
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+  "occurredAt",
+  "startsOn",
+  "endsOn",
+  "lastSeenAt",
+  "lastSyncedAt",
 ]);
 
 function cleanData(operation: Operation, userId: string) {
@@ -62,16 +68,24 @@ function cleanData(operation: Operation, userId: string) {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(source)) {
     if (serverOnly.has(key) || key === "id") continue;
-    if (dateFields.has(key) && typeof value === "string") result[key] = new Date(value);
+    if (dateFields.has(key) && typeof value === "string")
+      result[key] = new Date(value);
     else result[key] = value;
   }
   if ("userId" in source && source.userId !== userId) {
-    throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "An operation targets another user");
+    throw new HttpError(
+      403,
+      "SYNC_OWNERSHIP_VIOLATION",
+      "An operation targets another user",
+    );
   }
   return result;
 }
 
-function delegate(db: PrismaClient | TransactionClient, table: Operation["table"]): Delegate {
+function delegate(
+  db: PrismaClient | TransactionClient,
+  table: Operation["table"],
+): Delegate {
   const key = delegateNames[table];
   return (db as unknown as Record<string, Delegate>)[key]!;
 }
@@ -82,47 +96,92 @@ async function assertOwned(
   userId: string,
 ) {
   if (operation.table === "BudgetCategory") {
-    const existing = operation.op === "PUT"
-      ? null
-      : await db.budgetCategory.findFirst({
-          where: { id: operation.id },
-          select: { budgetId: true },
-        });
+    const existing =
+      operation.op === "PUT"
+        ? null
+        : await db.budgetCategory.findFirst({
+            where: { id: operation.id },
+            select: { budgetId: true },
+          });
     const budgetId = operation.data?.budgetId ?? existing?.budgetId;
-    if (typeof budgetId !== "string") throw new HttpError(400, "INVALID_SYNC_OPERATION", "budgetId is required");
-    const budget = await db.budget.findFirst({ where: { id: budgetId, userId, deletedAt: null } });
-    if (!budget) throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "Budget is not owned by this user");
+    if (typeof budgetId !== "string")
+      throw new HttpError(
+        400,
+        "INVALID_SYNC_OPERATION",
+        "budgetId is required",
+      );
+    const budget = await db.budget.findFirst({
+      where: { id: budgetId, userId, deletedAt: null },
+    });
+    if (!budget)
+      throw new HttpError(
+        403,
+        "SYNC_OWNERSHIP_VIOLATION",
+        "Budget is not owned by this user",
+      );
     return;
   }
   if (operation.table === "TransactionTag") {
-    const existing = operation.op === "PUT"
-      ? null
-      : await db.transactionTag.findFirst({
-          where: { id: operation.id },
-          select: { transactionId: true },
-        });
-    const transactionId = operation.data?.transactionId ?? existing?.transactionId;
-    if (typeof transactionId !== "string") throw new HttpError(400, "INVALID_SYNC_OPERATION", "transactionId is required");
-    const transaction = await db.transaction.findFirst({ where: { id: transactionId, userId, deletedAt: null } });
-    if (!transaction) throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "Transaction is not owned by this user");
+    const existing =
+      operation.op === "PUT"
+        ? null
+        : await db.transactionTag.findFirst({
+            where: { id: operation.id },
+            select: { transactionId: true },
+          });
+    const transactionId =
+      operation.data?.transactionId ?? existing?.transactionId;
+    if (typeof transactionId !== "string")
+      throw new HttpError(
+        400,
+        "INVALID_SYNC_OPERATION",
+        "transactionId is required",
+      );
+    const transaction = await db.transaction.findFirst({
+      where: { id: transactionId, userId, deletedAt: null },
+    });
+    if (!transaction)
+      throw new HttpError(
+        403,
+        "SYNC_OWNERSHIP_VIOLATION",
+        "Transaction is not owned by this user",
+      );
     return;
   }
   if (operation.table === "User") {
-    if (operation.id !== userId) throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "User profile does not match token");
+    if (operation.id !== userId)
+      throw new HttpError(
+        403,
+        "SYNC_OWNERSHIP_VIOLATION",
+        "User profile does not match token",
+      );
     if (operation.op === "PUT") {
-      throw new HttpError(400, "INVALID_SYNC_OPERATION", "Users must be created through registration");
+      throw new HttpError(
+        400,
+        "INVALID_SYNC_OPERATION",
+        "Users must be created through registration",
+      );
     }
     return;
   }
   const dataUserId = operation.data?.userId;
   if (operation.op === "PUT" && dataUserId !== userId) {
-    throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "New rows must belong to the authenticated user");
+    throw new HttpError(
+      403,
+      "SYNC_OWNERSHIP_VIOLATION",
+      "New rows must belong to the authenticated user",
+    );
   }
   if (operation.op !== "PUT") {
     const existing = await delegate(db, operation.table).findFirst({
       where: { id: operation.id, userId },
     });
-    if (!existing) throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "Record is not owned by this user");
+    if (!existing)
+      throw new HttpError(
+        403,
+        "SYNC_OWNERSHIP_VIOLATION",
+        "Record is not owned by this user",
+      );
   }
 }
 
@@ -134,7 +193,10 @@ async function applyOperation(
   await assertOwned(db, operation, userId);
   const model = delegate(db, operation.table);
   if (operation.op === "DELETE") {
-    await model.updateMany({ where: { id: operation.id }, data: { deletedAt: new Date() } });
+    await model.updateMany({
+      where: { id: operation.id },
+      data: { deletedAt: new Date() },
+    });
     return;
   }
   const data = cleanData(operation, userId);
@@ -143,7 +205,12 @@ async function applyOperation(
       data: {
         id: operation.id,
         ...data,
-        ...(operation.table === "User" ? {} : operation.table === "BudgetCategory" || operation.table === "TransactionTag" ? {} : { userId }),
+        ...(operation.table === "User"
+          ? {}
+          : operation.table === "BudgetCategory" ||
+              operation.table === "TransactionTag"
+            ? {}
+            : { userId }),
       },
     });
     return;
