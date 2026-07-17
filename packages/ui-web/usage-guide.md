@@ -12,6 +12,10 @@ The web application proxies `/backend/*` to the API. Desktop can pass its
 configured API origin instead. Authentication is held in memory until a
 same-origin secure-cookie or platform credential adapter is implemented.
 
+The settings route exposes JSONL export from the bounded browser diagnostics
+transport. Client logs are structured and rendered as non-ANSI boxes in the
+developer console.
+
 Routes use hashes so the same navigation works in both hosts:
 
 ```text

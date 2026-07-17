@@ -35,5 +35,9 @@ Current route screens are:
 - Settings: session identity and sign-out.
 - Overview: workflow shortcuts without invented metrics.
 
+The unauthenticated screen supports both login and account registration through
+the API authentication routes. Successful registration returns the same
+validated session envelope as login and opens the application immediately.
+
 See `frontend-design.md` for research sources, accessibility requirements, and
 missing service dependencies.

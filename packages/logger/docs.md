@@ -19,7 +19,8 @@ Boxes are available in every environment. A failed request produces linked
 output:
 
 1. a structured error box;
-2. a stack-only box;
+2. a stack-only box titled with the error ID and containing only the error-ID
+   reference and stack trace;
 3. the request completion box containing `Error: {errorId}`.
 
 Production terminal stacks are hidden unless `LOG_STACKS=true`, but stack

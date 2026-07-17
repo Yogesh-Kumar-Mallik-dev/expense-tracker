@@ -1,6 +1,7 @@
 import { ArrowRight, LogOut, RefreshCw } from "lucide-react";
 import React from "react";
 import { useCallback, useEffect, useState } from "react";
+import type { BrowserDiagnosticsTransport } from "@expense-tracker/logger/browser";
 import { Alert, AlertDescription, AlertTitle } from "#components/ui/alert";
 import { Button } from "#components/ui/button";
 import { Skeleton } from "#components/ui/skeleton";
@@ -374,9 +375,11 @@ export function SyncScreen() {
 export function SettingsScreen({
   session,
   onLogout,
+  diagnostics,
 }: {
   session: Session;
   onLogout: () => Promise<void>;
+  diagnostics: BrowserDiagnosticsTransport;
 }) {
   return (
     <section
@@ -412,6 +415,23 @@ export function SettingsScreen({
           refresh tokens in browser storage.
         </AlertDescription>
       </Alert>
+      <div className="settings-action">
+        <div>
+          <strong>Diagnostic logs</strong>
+          <p>
+            Export this session’s structured client logs as JSONL for
+            troubleshooting. Tokens, passwords, request bodies, and SQL are
+            excluded by the logger.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => diagnostics.download()}
+        >
+          Export diagnostic logs
+        </Button>
+      </div>
       <Button variant="outline" type="button" onClick={() => void onLogout()}>
         <LogOut /> Sign out
       </Button>

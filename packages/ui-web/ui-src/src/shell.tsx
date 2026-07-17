@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useEffect, useState } from "react";
+import type { BrowserDiagnosticsTransport } from "@expense-tracker/logger/browser";
 import { Button } from "#components/ui/button";
 import {
   Tooltip,
@@ -65,12 +66,14 @@ export function AppShell({
   platform,
   onUnauthorized,
   onLogout,
+  diagnostics,
 }: {
   api: ExpenseApi;
   session: Session;
   platform: "web" | "desktop";
   onUnauthorized: () => void;
   onLogout: () => Promise<void>;
+  diagnostics: BrowserDiagnosticsTransport;
 }) {
   const [route, setRoute] = useState<AppRoute>(routeFromHash);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -174,7 +177,11 @@ export function AppShell({
           {route === "reports" ? <ReportsScreen /> : null}
           {route === "sync" ? <SyncScreen /> : null}
           {route === "settings" ? (
-            <SettingsScreen session={session} onLogout={onLogout} />
+            <SettingsScreen
+              session={session}
+              onLogout={onLogout}
+              diagnostics={diagnostics}
+            />
           ) : null}
           {route === "overview" ? <OverviewScreen navigate={navigate} /> : null}
         </main>

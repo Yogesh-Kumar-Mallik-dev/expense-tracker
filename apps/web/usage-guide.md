@@ -1,16 +1,28 @@
 # Web Application Usage Guide
 
-Status: framework initialized.
+Start the complete web development stack from the repository root:
 
-Before adding features:
+```bash
+pnpm dev:web
+```
 
-1. Run `pnpm --filter @expense-tracker/web dev`.
-2. Copy PowerSync WASM and worker assets into the public directory.
-3. Initialize one web offline database instance.
-4. Construct shared services with offline adapters.
-5. Implement login and token refresh against `@expense-tracker/api`.
-6. Connect PowerSync only after authentication.
-7. Disconnect and close the database during permanent teardown.
+This starts the API on port 3001 and the Next.js frontend on port 3000. The web
+host proxies `/backend/*` to the API, so registration and login require both
+processes.
 
-Refer to `packages/db-offline/usage-guide.md` for the web driver example and
+If the API is already running separately, start only the UI:
+
+```bash
+pnpm dev:web:ui
+```
+
+Account creation is available from the sign-in screen and directly at
+`http://localhost:3000/signup`.
+
+Authenticated users can export bounded, structured client diagnostics from
+Settings. API logs are printed as boxes and written as rotating JSONL files
+under `logs/`. Neither output includes credentials, request bodies, raw SQL, or
+database arguments.
+
+Refer to `packages/db-offline/usage-guide.md` for the web driver and
 `apps/api/usage-guide.md` for backend requests.

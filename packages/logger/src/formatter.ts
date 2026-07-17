@@ -22,18 +22,33 @@ export function formatBox(entry: LogEntry, options: FormatOptions = {}) {
   const color = options.color ?? true;
   const width = Math.max(72, Math.min(options.width ?? 110, 160));
   const request = entry.request;
-  const title = [
-    entry.level,
-    request ? `[${request.requestId}]` : null,
-    request?.method,
-    request?.path,
-  ]
-    .filter(Boolean)
-    .join("  ");
-  const rows: Array<[string, string]> = [
-    ["Time", new Date(entry.timestamp).toLocaleString()],
-    ["Service", entry.service],
-  ];
+  const stackEntry = entry.kind === "stack";
+  const title =
+    stackEntry && entry.error
+      ? `STACK  [${entry.error.errorId}]`
+      : [
+          entry.level,
+          request ? `[${request.requestId}]` : null,
+          request?.method,
+          request?.path,
+        ]
+          .filter(Boolean)
+          .join("  ");
+  const rows: Array<[string, string]> = stackEntry
+    ? [
+        ["Error ID", entry.error?.errorId ?? "Unavailable"],
+        [
+          "Stack",
+          options.includeStack
+            ? (entry.error?.stack ?? "Stack unavailable")
+            : "Stack output disabled",
+        ],
+      ]
+    : [
+        ["Time", new Date(entry.timestamp).toLocaleString()],
+        ["Service", entry.service],
+      ];
+  if (stackEntry) return renderBox(title, rows, width, entry.level, color);
   if (request) {
     rows.push(
       ["Sequence", String(request.sequence)],
@@ -83,9 +98,6 @@ export function formatBox(entry: LogEntry, options: FormatOptions = {}) {
       ["Cause", entry.error.cause ?? "—"],
     );
     if (entry.kind === "error") rows.push(["Error", entry.error.message]);
-    if (entry.kind === "stack" && options.includeStack) {
-      rows.push(["Stack", entry.error.stack ?? "Stack unavailable"]);
-    }
   }
   for (const [key, value] of Object.entries(entry.fields)) {
     rows.push([label(key), String(value ?? "—")]);
@@ -93,13 +105,23 @@ export function formatBox(entry: LogEntry, options: FormatOptions = {}) {
   if (entry.memoryMb !== null)
     rows.push(["Memory", `${entry.memoryMb.toFixed(2)} MB`]);
 
+  return renderBox(title, rows, width, entry.level, color);
+}
+
+function renderBox(
+  title: string,
+  rows: Array<[string, string]>,
+  width: number,
+  level: LogLevel,
+  color: boolean,
+) {
   const top = `╭${"─".repeat(width - 2)}╮`;
   const divider = `├${"─".repeat(width - 2)}┤`;
   const bottom = `╰${"─".repeat(width - 2)}╯`;
   const lines = [
     top,
     ...wrap(title, width - 4).map((line) =>
-      boxLine(paint(line, entry.level, color), width),
+      boxLine(paint(line, level, color), width),
     ),
     divider,
     ...rows.flatMap(([name, value]) => formatRow(name, value, width)),

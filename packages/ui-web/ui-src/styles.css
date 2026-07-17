@@ -143,6 +143,31 @@ summary:focus-visible {
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+.auth-switch {
+  margin: 0;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+.auth-switch button {
+  display: inline-flex;
+  padding-inline: 0.125rem;
+}
+.settings-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--border);
+}
+.settings-action p {
+  max-width: 42rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
 
 .app-shell {
   min-height: 100dvh;

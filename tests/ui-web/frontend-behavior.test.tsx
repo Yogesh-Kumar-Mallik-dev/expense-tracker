@@ -8,6 +8,8 @@ import {
   ExpenseApi,
   ResponseValidationError,
   type Account,
+  type RegistrationInput,
+  type Session,
   type Transaction,
 } from "../../packages/ui-web/ui-src/src/api";
 
@@ -48,6 +50,19 @@ const META = {
   totalPages: 1,
   hasNext: false,
   hasPrevious: false,
+};
+const SESSION: Session = {
+  user: {
+    id: ACCOUNT.userId,
+    email: "person@example.com",
+    name: "Example Person",
+    currency: "INR",
+  },
+  tokens: {
+    accessToken: "access-token",
+    refreshToken: "refresh-token",
+    expiresIn: 900,
+  },
 };
 
 let dom: JSDOM;
@@ -112,6 +127,53 @@ test("API rejects a successful but invalid response envelope", async () => {
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+test("signup validates confirmation and submits the documented registration contract once", async () => {
+  const { render, screen } = await import("@testing-library/react");
+  const user = (await import("@testing-library/user-event")).default.setup();
+  const { LoginScreen } =
+    await import("../../packages/ui-web/ui-src/src/screens/login-screen");
+  const registrations: RegistrationInput[] = [];
+  let authenticated: Session | null = null;
+  const api = {
+    register: async (input: RegistrationInput) => {
+      registrations.push(input);
+      return { data: SESSION };
+    },
+  } as unknown as ExpenseApi;
+
+  render(
+    <LoginScreen
+      api={api}
+      onLogin={(session) => {
+        authenticated = session;
+      }}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Create one" }));
+  await user.type(screen.getByLabelText("Name"), "Example Person");
+  await user.type(screen.getByLabelText("Email"), "person@example.com");
+  await user.type(screen.getByLabelText("Password"), "a-secure-password");
+  await user.type(screen.getByLabelText("Confirm password"), "different");
+  await user.click(screen.getByRole("button", { name: "Create account" }));
+  assert.ok(screen.getByRole("alert"));
+  assert.equal(registrations.length, 0);
+
+  await user.clear(screen.getByLabelText("Confirm password"));
+  await user.type(
+    screen.getByLabelText("Confirm password"),
+    "a-secure-password",
+  );
+  await user.click(screen.getByRole("button", { name: "Create account" }));
+  assert.equal(registrations.length, 1);
+  assert.deepEqual(registrations[0], {
+    email: "person@example.com",
+    password: "a-secure-password",
+    name: "Example Person",
+    currency: "INR",
+  });
+  assert.equal(authenticated, SESSION);
 });
 
 test("transaction register renders populated data and filters the current page", async () => {

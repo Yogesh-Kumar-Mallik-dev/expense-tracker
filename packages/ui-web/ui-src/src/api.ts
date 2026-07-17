@@ -134,6 +134,13 @@ export interface TransactionInput {
   occurredAt: string;
 }
 
+export interface RegistrationInput {
+  email: string;
+  password: string;
+  name: string | null;
+  currency: string;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -168,6 +175,19 @@ export class ExpenseApi {
       {
         method: "POST",
         body: JSON.stringify({ email, password }),
+        ...(signal ? { signal } : {}),
+      },
+      false,
+    );
+  }
+
+  register(input: RegistrationInput, signal?: AbortSignal) {
+    return this.request(
+      "/api/auth/register",
+      sessionSchema,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
         ...(signal ? { signal } : {}),
       },
       false,

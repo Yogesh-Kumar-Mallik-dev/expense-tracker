@@ -170,9 +170,10 @@ description, source, and memory are included without collecting bodies,
 credentials, raw queries, or database arguments.
 
 Handled route exceptions receive request-derived IDs such as `REQUEST-E01`.
-The logger emits a structured error box, a separate stack box, and a completion
-box referencing that error ID. JSONL receives all three; production terminal
-stacks require `LOG_STACKS=true`.
+The logger emits a structured error box, a separate stack-only box titled with
+that error ID, and a completion box referencing the same ID. The stack box does
+not repeat request, client, handler, or memory metadata. JSONL receives all
+three; production terminal stacks require `LOG_STACKS=true`.
 
 See `packages/logger/docs.md` for transports, retention, database adapters, and
 the stable structured entry.

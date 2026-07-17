@@ -96,6 +96,49 @@ test("exceptions create linked structured-error and stack entries", () => {
   assert.equal(transport.entries[0]?.error?.code, "P2002");
 });
 
+test("stack box uses the error ID as its reference without repeating request metadata", () => {
+  const transport = new CaptureTransport();
+  const logger = new Logger({
+    service: "test",
+    level: "TRACE",
+    transports: [transport],
+  });
+  logger.exception(
+    {
+      requestId: "REQUEST-01",
+      sequence: 1,
+      requestIdSource: "incoming",
+      duplicateRequestId: false,
+      method: "POST",
+      path: "/api/auth/register",
+      ip: "unavailable",
+      source: "BROWSER",
+      browser: "Chrome",
+      client: "Desktop",
+      userAgent: "test",
+      startedAt: 0,
+      userId: null,
+    },
+    new Error("database unavailable"),
+    "REQUEST-01-E01",
+    { handler: "POST /api/auth/register" },
+  );
+  const stack = transport.entries[1];
+  assert.ok(stack);
+  const output = formatBox(stack, {
+    color: false,
+    width: 100,
+    includeStack: true,
+  });
+  assert.match(output, /STACK  \[REQUEST-01-E01\]/);
+  assert.match(output, /Error ID\s+│ REQUEST-01-E01/);
+  assert.match(output, /Stack\s+│ Error: database unavailable/);
+  assert.doesNotMatch(output, /POST\s+\/api\/auth\/register/);
+  assert.doesNotMatch(output, /Client\s+│/);
+  assert.doesNotMatch(output, /Service\s+│/);
+  assert.doesNotMatch(output, /Memory\s+│/);
+});
+
 test("box formatter keeps the visual request summary contract", () => {
   const transport = new CaptureTransport();
   const logger = new Logger({
