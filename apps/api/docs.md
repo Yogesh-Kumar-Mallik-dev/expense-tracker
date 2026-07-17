@@ -270,3 +270,16 @@ default size limit is 10 MiB.
 Synchronized metadata tombstones do not immediately remove binary objects.
 Production operations should run delayed garbage collection only after the
 tombstone-retention window proves every client has observed deletion.
+
+## Budget modes
+
+Budget records support `SPENDING_LIMIT` (default) and `ENVELOPE`. Envelope
+source operations are exposed at:
+
+- `GET|POST /api/budgets/:id/allocations`
+- `GET|POST /api/budgets/:id/transfers`
+- `GET|POST /api/budgets/:id/conversion-preview`
+
+The conversion `GET` previews warnings without mutation. `POST` creates the
+replacement plan before tombstoning the source. Category ownership and
+envelope mode are checked for every activity write.

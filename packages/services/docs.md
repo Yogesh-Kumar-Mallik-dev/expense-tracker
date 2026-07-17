@@ -71,3 +71,18 @@ offline applications use locally known IDs and synchronize parents separately.
 
 Reporting adapters intentionally run unpaginated source-row queries. Reusing a
 paginated UI transaction query would silently undercount balances and budgets.
+
+## Budget modes
+
+Budgets use an explicit strategy. `SPENDING_LIMIT` is the default and treats
+the amount as a warning threshold. `ENVELOPE` is opt-in and derives available
+money from carry-over, allocations, activity, and transfers.
+
+Money remains a four-decimal fixed-point string. Spent, remaining, available,
+and ready-to-assign values are computed projections, never stored counters.
+Allocations and transfers are immutable source records with tombstones.
+
+Mode conversion is preview-first. Confirming a conversion must create a new
+plan and archive the source; it must never reinterpret historical transactions.
+Envelope transfers cannot create or destroy money, negative availability stays
+visible, and cross-currency activity is excluded and reported.

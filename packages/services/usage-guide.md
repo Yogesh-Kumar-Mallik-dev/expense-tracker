@@ -13,6 +13,31 @@ pnpm build
 
 ## Account service
 
+## Budget calculations
+
+```ts
+import {
+  envelopeProjection,
+  readyToAssign,
+  spendingLimitProjection,
+} from "@expense-tracker/services/budget";
+
+spendingLimitProjection("8000.0000", "8300.0000");
+// remaining: "-300.0000", exceeded: true
+
+envelopeProjection({
+  assigned: "8000.0000",
+  activity: "6300.0000",
+  carryOver: "500.0000",
+  incomingTransfers: "250.0000",
+  outgoingTransfers: "100.0000",
+});
+// available: "2350.0000"
+
+readyToAssign("25000.0000", "22000.0000");
+// "3000.0000"
+```
+
 Construct the service with a repository-port implementation. Inject a UUID
 factory on platforms that do not provide `globalThis.crypto.randomUUID`.
 

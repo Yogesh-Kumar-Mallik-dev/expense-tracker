@@ -107,3 +107,7 @@ PowerSync creates and maintains its managed SQLite views from
 `powerSyncSchema`, so those views do not require client migrations. The Drizzle
 migration is useful for local-only tests or tools that open the schema without
 PowerSync.
+
+Envelope budgeting adds `EnvelopeAllocation` and `BudgetTransfer`. They mirror
+PostgreSQL source rows and synchronize independently. Available envelope
+balances are recalculated locally rather than synchronized as mutable totals.

@@ -1,3 +1,14 @@
+enum BudgetMode {
+  SPENDING_LIMIT
+  ENVELOPE
+}
+
+enum BudgetRolloverPolicy {
+  NONE
+  POSITIVE_ONLY
+  FULL
+}
+
 model Budget {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
@@ -6,13 +17,48 @@ model Budget {
   currency  String    @db.VarChar(3)
   startsOn  DateTime  @db.Date
   endsOn    DateTime  @db.Date
+  mode      BudgetMode @default(SPENDING_LIMIT)
+  rolloverPolicy BudgetRolloverPolicy @default(NONE)
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
 
   user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   categories BudgetCategory[]
+  allocations EnvelopeAllocation[]
+  transfers BudgetTransfer[]
 
   @@unique([userId, name, startsOn, endsOn])
   @@index([userId, startsOn, endsOn])
+}
+
+model EnvelopeAllocation {
+  id         String    @id @default(uuid()) @db.Uuid
+  budgetId   String    @db.Uuid
+  categoryId String    @db.Uuid
+  amount     Decimal   @db.Decimal(19, 4)
+  occurredAt DateTime  @db.Date
+  note       String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  deletedAt  DateTime? @db.Timestamptz(3)
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Restrict)
+
+  @@index([budgetId, categoryId, occurredAt])
+}
+
+model BudgetTransfer {
+  id             String    @id @default(uuid()) @db.Uuid
+  budgetId       String    @db.Uuid
+  fromCategoryId String?   @db.Uuid
+  toCategoryId   String?   @db.Uuid
+  amount         Decimal   @db.Decimal(19, 4)
+  occurredAt     DateTime  @db.Date
+  note           String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  deletedAt      DateTime? @db.Timestamptz(3)
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Restrict)
+
+  @@index([budgetId, occurredAt])
 }

@@ -1,5 +1,10 @@
-import { StarterApp } from "@expense-tracker/ui-web";
+import { ExpenseApp } from "@expense-tracker/ui-web";
 
 export function App() {
-  return <StarterApp platform="desktop" />;
+  return (
+    <ExpenseApp
+      apiBaseUrl={import.meta.env.VITE_API_URL ?? "http://localhost:3001"}
+      platform="desktop"
+    />
+  );
 }

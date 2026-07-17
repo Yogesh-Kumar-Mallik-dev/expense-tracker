@@ -11,7 +11,7 @@ export * from "./user";
 
 import { accounts } from "./account";
 import { attachments } from "./attachment";
-import { budgets } from "./budget";
+import { budgetTransfers, budgets, envelopeAllocations } from "./budget";
 import { budgetCategories, categories } from "./category";
 import { devices } from "./device";
 import { refreshTokens } from "./refreshToken";
@@ -25,6 +25,8 @@ export const drizzleSchema = {
   accounts,
   categories,
   budgets,
+  envelopeAllocations,
+  budgetTransfers,
   budgetCategories,
   transactions,
   tags,

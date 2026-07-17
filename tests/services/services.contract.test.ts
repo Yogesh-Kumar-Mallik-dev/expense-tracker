@@ -144,6 +144,8 @@ test("reporting derives balances and transfers without persisted counters", asyn
     listTransactions: async () => [tx],
     listBudgets: async () => [],
     listBudgetCategories: async () => [],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
   });
   assert.deepEqual(
     (await reports.accountBalances(USER)).map((v) => v.balance),
@@ -185,6 +187,8 @@ test("reporting derives budget usage and reports currency exclusions", async () 
         currency: "USD",
         startsOn: "2026-07-01",
         endsOn: "2026-07-31",
+        mode: "SPENDING_LIMIT",
+        rolloverPolicy: "NONE",
         createdAt: clock(),
         updatedAt: clock(),
         deletedAt: null,
@@ -199,6 +203,8 @@ test("reporting derives budget usage and reports currency exclusions", async () 
         deletedAt: null,
       },
     ],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
   });
   const [usage] = await reports.budgetUsage(USER, "2026-07-01", "2026-07-31");
   assert.equal(usage?.spent, "4.2500");

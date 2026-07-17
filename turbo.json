@@ -3,6 +3,7 @@
   "ui": "tui",
   "globalEnv": [
     "DATABASE_URL",
+    "CORS_ORIGINS",
     "LOG_DIRECTORY",
     "LOG_LEVEL",
     "LOG_STACKS",

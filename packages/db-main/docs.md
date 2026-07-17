@@ -89,3 +89,9 @@ DATABASE_URL=postgresql://user:password@localhost:5432/expense_tracker
 
 Never expose this package or its environment variables to browser or native
 client bundles.
+
+## Budget modes
+
+`Budget.mode` defaults to `SPENDING_LIMIT`. Envelope plans use
+`EnvelopeAllocation` and `BudgetTransfer` as source records. PostgreSQL does
+not store mutable available or remaining counters; reporting derives them.

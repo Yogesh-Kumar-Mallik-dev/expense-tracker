@@ -3,7 +3,9 @@
 Import components through the package boundary:
 
 ```tsx
-import { PlatformBadge } from "@expense-tracker/ui-web";
+import { ExpenseApp } from "@expense-tracker/ui-web";
+
+<ExpenseApp apiBaseUrl="/backend" platform="web" />;
 ```
 
 Add tests under `tests/ui-web/` and run `pnpm test:web`.

@@ -5,8 +5,11 @@ import type {
   AttachmentRecord,
   AttachmentRepositoryPort,
   BudgetCategoryRecord,
+  BudgetActivityRepositoryPort,
   BudgetRecord,
   BudgetRepositoryPort,
+  EnvelopeAllocationRecord,
+  EnvelopeTransferRecord,
   CategoryRecord,
   CategoryRepositoryPort,
   DeviceRecord,
@@ -34,7 +37,14 @@ import {
   TransactionTagRepository,
   UserRepository,
 } from "../repositories";
-import { accounts, budgetCategories, budgets, transactions } from "../schema";
+import {
+  accounts,
+  budgetCategories,
+  budgetTransfers,
+  budgets,
+  envelopeAllocations,
+  transactions,
+} from "../schema";
 
 export class OfflineAccountAdapter implements AccountRepositoryPort {
   constructor(private readonly value: AccountRepository) {}
@@ -122,6 +132,38 @@ export class OfflineBudgetAdapter implements BudgetRepositoryPort {
   }
   async delete(id: string, u: string) {
     await this.value.delete(id, u);
+  }
+}
+
+export class OfflineBudgetActivityAdapter implements BudgetActivityRepositoryPort {
+  constructor(private readonly db: OfflineDatabase) {}
+  async createAllocation(v: EnvelopeAllocationRecord) {
+    await this.db.insert(envelopeAllocations).values(v);
+  }
+  async createTransfer(v: EnvelopeTransferRecord) {
+    await this.db.insert(budgetTransfers).values(v);
+  }
+  async listAllocations(budgetId: string) {
+    return await this.db
+      .select()
+      .from(envelopeAllocations)
+      .where(
+        and(
+          eq(envelopeAllocations.budgetId, budgetId),
+          isNull(envelopeAllocations.deletedAt),
+        ),
+      );
+  }
+  async listTransfers(budgetId: string) {
+    return await this.db
+      .select()
+      .from(budgetTransfers)
+      .where(
+        and(
+          eq(budgetTransfers.budgetId, budgetId),
+          isNull(budgetTransfers.deletedAt),
+        ),
+      );
   }
 }
 export class OfflineTransactionAdapter implements TransactionRepositoryPort {
@@ -273,6 +315,30 @@ export class OfflineReportingAdapter implements ReportingRepositoryPort {
         and(
           inArray(budgetCategories.budgetId, ids),
           isNull(budgetCategories.deletedAt),
+        ),
+      );
+  }
+  async listEnvelopeAllocations(ids: string[]) {
+    if (!ids.length) return [];
+    return await this.db
+      .select()
+      .from(envelopeAllocations)
+      .where(
+        and(
+          inArray(envelopeAllocations.budgetId, ids),
+          isNull(envelopeAllocations.deletedAt),
+        ),
+      );
+  }
+  async listBudgetTransfers(ids: string[]) {
+    if (!ids.length) return [];
+    return await this.db
+      .select()
+      .from(budgetTransfers)
+      .where(
+        and(
+          inArray(budgetTransfers.budgetId, ids),
+          isNull(budgetTransfers.deletedAt),
         ),
       );
   }

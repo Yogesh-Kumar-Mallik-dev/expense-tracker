@@ -5,8 +5,11 @@ import type {
   AttachmentRecord,
   AttachmentRepositoryPort,
   BudgetCategoryRecord,
+  BudgetActivityRepositoryPort,
   BudgetRecord,
   BudgetRepositoryPort,
+  EnvelopeAllocationRecord,
+  EnvelopeTransferRecord,
   CategoryRecord,
   CategoryRepositoryPort,
   DeviceRecord,
@@ -283,6 +286,56 @@ export class MainBudgetAdapter implements BudgetRepositoryPort {
       where: { id, userId: u, deletedAt: null },
       data: { deletedAt: new Date() },
     });
+  }
+}
+
+export class MainBudgetActivityAdapter implements BudgetActivityRepositoryPort {
+  constructor(private db: PrismaClient = prisma) {}
+  async createAllocation(v: EnvelopeAllocationRecord) {
+    await this.db.envelopeAllocation.create({
+      data: {
+        ...v,
+        occurredAt: new Date(v.occurredAt),
+        createdAt: new Date(v.createdAt),
+        deletedAt: null,
+      },
+    });
+  }
+  async createTransfer(v: EnvelopeTransferRecord) {
+    await this.db.budgetTransfer.create({
+      data: {
+        ...v,
+        occurredAt: new Date(v.occurredAt),
+        createdAt: new Date(v.createdAt),
+        deletedAt: null,
+      },
+    });
+  }
+  async listAllocations(budgetId: string): Promise<EnvelopeAllocationRecord[]> {
+    return (
+      await this.db.envelopeAllocation.findMany({
+        where: { budgetId, deletedAt: null },
+      })
+    ).map((v) => ({
+      ...v,
+      amount: v.amount.toString(),
+      occurredAt: v.occurredAt.toISOString().slice(0, 10),
+      createdAt: v.createdAt.toISOString(),
+      deletedAt: iso(v.deletedAt),
+    }));
+  }
+  async listTransfers(budgetId: string): Promise<EnvelopeTransferRecord[]> {
+    return (
+      await this.db.budgetTransfer.findMany({
+        where: { budgetId, deletedAt: null },
+      })
+    ).map((v) => ({
+      ...v,
+      amount: v.amount.toString(),
+      occurredAt: v.occurredAt.toISOString().slice(0, 10),
+      createdAt: v.createdAt.toISOString(),
+      deletedAt: iso(v.deletedAt),
+    }));
   }
 }
 export class MainTransactionAdapter implements TransactionRepositoryPort {
@@ -583,6 +636,32 @@ export class MainReportingAdapter implements ReportingRepositoryPort {
       })
     ).map((v) => ({
       ...v,
+      createdAt: v.createdAt.toISOString(),
+      deletedAt: iso(v.deletedAt),
+    }));
+  }
+  async listEnvelopeAllocations(ids: string[]) {
+    return (
+      await this.db.envelopeAllocation.findMany({
+        where: { budgetId: { in: ids }, deletedAt: null },
+      })
+    ).map((v) => ({
+      ...v,
+      amount: v.amount.toString(),
+      occurredAt: v.occurredAt.toISOString().slice(0, 10),
+      createdAt: v.createdAt.toISOString(),
+      deletedAt: iso(v.deletedAt),
+    }));
+  }
+  async listBudgetTransfers(ids: string[]) {
+    return (
+      await this.db.budgetTransfer.findMany({
+        where: { budgetId: { in: ids }, deletedAt: null },
+      })
+    ).map((v) => ({
+      ...v,
+      amount: v.amount.toString(),
+      occurredAt: v.occurredAt.toISOString().slice(0, 10),
       createdAt: v.createdAt.toISOString(),
       deletedAt: iso(v.deletedAt),
     }));

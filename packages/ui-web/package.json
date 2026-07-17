@@ -19,12 +19,17 @@
     "lint": "eslint ui-src"
   },
   "peerDependencies": {
-    "react": "19.2.3"
+    "react": "19.2.3",
+    "lucide-react": "^0.468.0"
+  },
+  "dependencies": {
+    "@expense-tracker/services": "workspace:*"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@types/react": "^19.2.0",
     "eslint": "catalog:",
+    "lucide-react": "^0.468.0",
     "react": "19.2.3",
     "typescript": "catalog:"
   }

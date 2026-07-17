@@ -15,6 +15,13 @@
       "when": 1784208062218,
       "tag": "0001_mysterious_alex_wilder",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784312224005,
+      "tag": "0002_pink_randall",
+      "breakpoints": true
     }
   ]
 }
