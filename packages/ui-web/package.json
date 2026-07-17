@@ -10,7 +10,8 @@
       "types": "./ui-src/index.ts",
       "development": "./ui-src/index.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./styles.css": "./ui-src/styles.css"
   },
   "scripts": {
     "build": "tsc",

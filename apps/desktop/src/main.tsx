@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
-import "@/styles.css";
+import "@expense-tracker/ui-web/styles.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

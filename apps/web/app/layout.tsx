@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "./styles.css";
+import "@expense-tracker/ui-web/styles.css";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
