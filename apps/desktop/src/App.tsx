@@ -8,6 +8,7 @@ export function App() {
     <ExpenseApp
       application={application}
       platform="desktop"
+      telemetryEndpoint={import.meta.env.VITE_TELEMETRY_URL}
     />
   );
 }

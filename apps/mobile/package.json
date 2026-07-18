@@ -15,12 +15,16 @@
     "doctor": "expo-doctor"
   },
   "dependencies": {
+    "@expense-tracker/client-core": "workspace:*",
     "@expense-tracker/db-offline": "workspace:*",
     "@expense-tracker/logger": "workspace:*",
     "@expense-tracker/services": "workspace:*",
     "@expense-tracker/ui-native": "workspace:*",
+    "@powersync/react-native": "catalog:",
     "expo": "~57.0.7",
+    "expo-constants": "^57.0.6",
     "expo-dev-client": "~57.0.7",
+    "expo-secure-store": "^57.0.1",
     "expo-status-bar": "~57.0.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",

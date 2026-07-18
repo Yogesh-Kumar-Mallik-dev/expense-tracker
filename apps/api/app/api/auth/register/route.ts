@@ -26,7 +26,13 @@ export const POST = route(async (request: Request) => {
       ...(input.name !== undefined ? { name: input.name } : {}),
       currency: input.currency,
     },
-    select: { id: true, email: true, name: true, currency: true, timezone: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      currency: true,
+      timezone: true,
+    },
   });
   return ok({ user, tokens: await issueTokens(user.id) }, 201);
 });

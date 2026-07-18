@@ -11,23 +11,61 @@ export class BudgetRepository {
   }
 
   async findById(id: string, userId: string) {
-    return (await this.db.select().from(budgets).where(and(eq(budgets.id, id), eq(budgets.userId, userId), isNull(budgets.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(budgets)
+          .where(
+            and(
+              eq(budgets.id, id),
+              eq(budgets.userId, userId),
+              isNull(budgets.deletedAt),
+            ),
+          )
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   listForPeriod(userId: string, from: string, to: string) {
-    return this.db.select().from(budgets).where(and(
-      eq(budgets.userId, userId),
-      isNull(budgets.deletedAt),
-      lte(budgets.startsOn, to),
-      gte(budgets.endsOn, from),
-    )).orderBy(desc(budgets.startsOn));
+    return this.db
+      .select()
+      .from(budgets)
+      .where(
+        and(
+          eq(budgets.userId, userId),
+          isNull(budgets.deletedAt),
+          lte(budgets.startsOn, to),
+          gte(budgets.endsOn, from),
+        ),
+      )
+      .orderBy(desc(budgets.startsOn));
   }
 
   update(id: string, userId: string, data: UpdateBudgetInput) {
-    return this.db.update(budgets).set(data).where(and(eq(budgets.id, id), eq(budgets.userId, userId), isNull(budgets.deletedAt)));
+    return this.db
+      .update(budgets)
+      .set(data)
+      .where(
+        and(
+          eq(budgets.id, id),
+          eq(budgets.userId, userId),
+          isNull(budgets.deletedAt),
+        ),
+      );
   }
 
   delete(id: string, userId: string) {
-    return this.db.update(budgets).set({ deletedAt: new Date().toISOString() }).where(and(eq(budgets.id, id), eq(budgets.userId, userId), isNull(budgets.deletedAt)));
+    return this.db
+      .update(budgets)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(budgets.id, id),
+          eq(budgets.userId, userId),
+          isNull(budgets.deletedAt),
+        ),
+      );
   }
 }

@@ -139,6 +139,14 @@ export interface ExpenseDataClient {
     timezone?: string;
   }): Promise<void>;
   deleteProfile(): Promise<void>;
+  deletionRequest(): Promise<
+    Result<{
+      id: string;
+      requestedAt: string;
+      scheduledFor: string;
+    } | null>
+  >;
+  cancelDeletion(): Promise<void>;
   requestEmailChange(email: string): Promise<
     Result<{
       delivery: "email" | "development";
@@ -148,6 +156,7 @@ export interface ExpenseDataClient {
   exportBackup(): Promise<Result<Backup>>;
   stageRestore(name: string, backup: unknown): Promise<Result<RestoreDataset>>;
   restoreDatasets(): Promise<Result<RestoreDataset[]>>;
+  restoreDataset(id: string): Promise<Result<Backup>>;
   reconcileAccount(
     accountId: string,
     value: {
@@ -221,6 +230,11 @@ export interface LocalDatabaseLifecycle {
   open(userId: string): Promise<void>;
   close(): Promise<void>;
   remove(userId: string): Promise<void>;
+  activateRestore?(
+    userId: string,
+    datasetId: string,
+    snapshot: Backup,
+  ): Promise<void>;
 }
 
 export interface ExpenseApplication {

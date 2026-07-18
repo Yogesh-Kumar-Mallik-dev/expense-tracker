@@ -265,6 +265,12 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   deleteProfile() {
     return this.remote.deleteProfile();
   }
+  deletionRequest() {
+    return this.remote.deletionRequest();
+  }
+  cancelDeletion() {
+    return this.remote.cancelDeletion();
+  }
   requestEmailChange(email: string) {
     return this.remote.requestEmailChange(email);
   }
@@ -276,6 +282,9 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   }
   restoreDatasets() {
     return this.remote.restoreDatasets();
+  }
+  restoreDataset(id: string) {
+    return this.remote.restoreDataset(id);
   }
   reconcileAccount(
     accountId: string,

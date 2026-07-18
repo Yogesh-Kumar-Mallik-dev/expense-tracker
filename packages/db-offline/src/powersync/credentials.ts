@@ -15,11 +15,16 @@ export function createHttpCredentialsProvider(
     const accessToken = await options.getAccessToken();
     if (!accessToken) return null;
 
-    const response = await (options.fetch ?? globalThis.fetch)(options.endpoint, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const response = await (options.fetch ?? globalThis.fetch)(
+      options.endpoint,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
     if (!response.ok) {
-      throw new Error(`Unable to fetch PowerSync credentials (${response.status})`);
+      throw new Error(
+        `Unable to fetch PowerSync credentials (${response.status})`,
+      );
     }
 
     const payload = (await response.json()) as {

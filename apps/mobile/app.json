@@ -3,15 +3,28 @@
     "name": "Expense Tracker",
     "slug": "expense-tracker",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "expense-tracker",
+    "plugins": [
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow Expense Tracker to access your secure session."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.expensetracker.mobile"
     },
     "android": {
-      "package": "dev.expensetracker.mobile"
+      "package": "dev.expensetracker.mobile",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro"

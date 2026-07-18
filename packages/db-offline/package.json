@@ -38,8 +38,10 @@
   "dependencies": {
     "@expense-tracker/services": "workspace:*",
     "@journeyapps/wa-sqlite": "catalog:",
+    "@op-engineering/op-sqlite": "^15.2.14",
     "@powersync/common": "catalog:",
     "@powersync/drizzle-driver": "catalog:",
+    "@powersync/op-sqlite": "^0.9.15",
     "@powersync/react-native": "catalog:",
     "@powersync/tauri-plugin": "catalog:",
     "@powersync/web": "catalog:",

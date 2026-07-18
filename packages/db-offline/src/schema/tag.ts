@@ -6,7 +6,9 @@ export const tags = sqliteTable(
   "Tag",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     color: text("color", { length: 7 }),
     createdAt: text("createdAt").notNull(),
@@ -25,13 +27,20 @@ export const transactionTags = sqliteTable(
   "TransactionTag",
   {
     id: text("id").primaryKey().notNull(),
-    transactionId: text("transactionId").notNull().references(() => transactions.id, { onDelete: "restrict" }),
-    tagId: text("tagId").notNull().references(() => tags.id, { onDelete: "restrict" }),
+    transactionId: text("transactionId")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "restrict" }),
+    tagId: text("tagId")
+      .notNull()
+      .references(() => tags.id, { onDelete: "restrict" }),
     createdAt: text("createdAt").notNull(),
     deletedAt: text("deletedAt"),
   },
   (table) => [
-    uniqueIndex("TransactionTag_transactionId_tagId_key").on(table.transactionId, table.tagId),
+    uniqueIndex("TransactionTag_transactionId_tagId_key").on(
+      table.transactionId,
+      table.tagId,
+    ),
     index("TransactionTag_tagId_idx").on(table.tagId),
   ],
 );

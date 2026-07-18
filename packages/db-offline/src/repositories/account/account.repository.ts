@@ -11,22 +11,62 @@ export class AccountRepository {
   }
 
   async findById(id: string, userId: string) {
-    return (await this.db.select().from(accounts).where(and(eq(accounts.id, id), eq(accounts.userId, userId), isNull(accounts.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(accounts)
+          .where(
+            and(
+              eq(accounts.id, id),
+              eq(accounts.userId, userId),
+              isNull(accounts.deletedAt),
+            ),
+          )
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   listByUser(userId: string, includeArchived = false) {
-    return this.db.select().from(accounts).where(
-      includeArchived
-        ? and(eq(accounts.userId, userId), isNull(accounts.deletedAt))
-        : and(eq(accounts.userId, userId), eq(accounts.isArchived, false), isNull(accounts.deletedAt)),
-    ).orderBy(asc(accounts.name));
+    return this.db
+      .select()
+      .from(accounts)
+      .where(
+        includeArchived
+          ? and(eq(accounts.userId, userId), isNull(accounts.deletedAt))
+          : and(
+              eq(accounts.userId, userId),
+              eq(accounts.isArchived, false),
+              isNull(accounts.deletedAt),
+            ),
+      )
+      .orderBy(asc(accounts.name));
   }
 
   update(id: string, userId: string, data: UpdateAccountInput) {
-    return this.db.update(accounts).set(data).where(and(eq(accounts.id, id), eq(accounts.userId, userId), isNull(accounts.deletedAt)));
+    return this.db
+      .update(accounts)
+      .set(data)
+      .where(
+        and(
+          eq(accounts.id, id),
+          eq(accounts.userId, userId),
+          isNull(accounts.deletedAt),
+        ),
+      );
   }
 
   delete(id: string, userId: string) {
-    return this.db.update(accounts).set({ deletedAt: new Date().toISOString() }).where(and(eq(accounts.id, id), eq(accounts.userId, userId), isNull(accounts.deletedAt)));
+    return this.db
+      .update(accounts)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(accounts.id, id),
+          eq(accounts.userId, userId),
+          isNull(accounts.deletedAt),
+        ),
+      );
   }
 }

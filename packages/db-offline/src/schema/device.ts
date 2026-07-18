@@ -8,7 +8,9 @@ export const devices = sqliteTable(
   "Device",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("userId").notNull().references(() => users.id, { onDelete: "restrict" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     platform: text("platform", { enum: devicePlatforms }).notNull(),
     lastSeenAt: text("lastSeenAt").notNull(),

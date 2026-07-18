@@ -7,7 +7,10 @@ export interface DesktopDatabaseOptions {
   location?: () => Promise<string>;
 }
 
-export type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
+export type TauriInvoke = <T>(
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<T>;
 
 export function createDesktopDatabase(options: DesktopDatabaseOptions = {}) {
   const powerSync = new PowerSyncTauriDatabase({
@@ -21,7 +24,9 @@ export function createDesktopDatabase(options: DesktopDatabaseOptions = {}) {
 
   return {
     powerSync,
-    db: createOfflineDatabase(powerSync as unknown as AbstractPowerSyncDatabase),
+    db: createOfflineDatabase(
+      powerSync as unknown as AbstractPowerSyncDatabase,
+    ),
   };
 }
 

@@ -11,18 +11,40 @@ export class UserRepository {
   }
 
   async findById(id: string) {
-    return (await this.db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(users)
+          .where(and(eq(users.id, id), isNull(users.deletedAt)))
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   async findByEmail(email: string) {
-    return (await this.db.select().from(users).where(and(eq(users.email, email), isNull(users.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(users)
+          .where(and(eq(users.email, email), isNull(users.deletedAt)))
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   update(id: string, data: UpdateUserInput) {
-    return this.db.update(users).set(data).where(and(eq(users.id, id), isNull(users.deletedAt)));
+    return this.db
+      .update(users)
+      .set(data)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)));
   }
 
   delete(id: string) {
-    return this.db.update(users).set({ deletedAt: new Date().toISOString() }).where(and(eq(users.id, id), isNull(users.deletedAt)));
+    return this.db
+      .update(users)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(and(eq(users.id, id), isNull(users.deletedAt)));
   }
 }

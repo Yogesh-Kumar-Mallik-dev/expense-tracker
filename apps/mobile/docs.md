@@ -1,10 +1,12 @@
 # Mobile Application Architecture
 
-Status: Expo SDK 57, development client, and NativeWind initialized.
+Status: Expo SDK 57 mobile composition implemented.
 
-The mobile client will initialize
+The mobile client initializes
 `@expense-tracker/db-offline/driver/mobile`, construct domain services with the
 offline adapters, and synchronize through the backend after authentication.
+Refresh credentials and the stable device identifier live in Expo SecureStore;
+access credentials remain in memory.
 
 The native SQLite dependency requires an Expo development or native build;
 Expo Go is not supported. Secure tokens belong in platform credential storage,

@@ -88,6 +88,9 @@ export function ClientApp({
       application={application}
       platform="web"
       initialAuthMode={initialAuthMode}
+      {...(process.env.NEXT_PUBLIC_TELEMETRY_URL
+        ? { telemetryEndpoint: process.env.NEXT_PUBLIC_TELEMETRY_URL }
+        : {})}
     />
   );
 }

@@ -52,10 +52,14 @@ manual approval as the safe first behavior.
   inspection; it never mutates the active synchronized namespace.
 - A restore must validate the complete archive and schema version before any
   mutation.
-- Activating or importing a staged dataset into an account remains a distinct
-  future command. The current restore workflow deliberately stops after
-  validation and staging so other devices cannot race it or resurrect
-  tombstones.
+- Opening a staged restore creates a new per-user local database and imports
+  the validated snapshot there. It never writes into the active synchronized
+  database.
+- Synchronization is disabled while the restored dataset is open. This makes
+  it suitable for inspection and export without allowing another device to
+  race the restore or resurrect tombstones.
+- Replacing the server-authoritative synchronized dataset remains a separate,
+  intentionally unsupported operation.
 
 This mirrors Actual Budget's restore-as-a-separate-file workflow rather than
 silently overwriting a live synchronized dataset.

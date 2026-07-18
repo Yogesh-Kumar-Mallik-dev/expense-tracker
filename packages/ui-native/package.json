@@ -18,6 +18,9 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint ui-src"
   },
+  "dependencies": {
+    "@expense-tracker/client-core": "workspace:*"
+  },
   "peerDependencies": {
     "expo-status-bar": "~57.0.0",
     "nativewind": "^4.2.6",

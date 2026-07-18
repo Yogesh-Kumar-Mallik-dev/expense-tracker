@@ -11,18 +11,47 @@ export class AttachmentRepository {
   }
 
   async findById(id: string, userId: string) {
-    return (await this.db.select().from(attachments).where(and(eq(attachments.id, id), eq(attachments.userId, userId), isNull(attachments.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(attachments)
+          .where(
+            and(
+              eq(attachments.id, id),
+              eq(attachments.userId, userId),
+              isNull(attachments.deletedAt),
+            ),
+          )
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   listByTransaction(transactionId: string, userId: string) {
-    return this.db.select().from(attachments).where(and(
-      eq(attachments.transactionId, transactionId),
-      eq(attachments.userId, userId),
-      isNull(attachments.deletedAt),
-    )).orderBy(asc(attachments.createdAt));
+    return this.db
+      .select()
+      .from(attachments)
+      .where(
+        and(
+          eq(attachments.transactionId, transactionId),
+          eq(attachments.userId, userId),
+          isNull(attachments.deletedAt),
+        ),
+      )
+      .orderBy(asc(attachments.createdAt));
   }
 
   delete(id: string, userId: string) {
-    return this.db.update(attachments).set({ deletedAt: new Date().toISOString() }).where(and(eq(attachments.id, id), eq(attachments.userId, userId), isNull(attachments.deletedAt)));
+    return this.db
+      .update(attachments)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(attachments.id, id),
+          eq(attachments.userId, userId),
+          isNull(attachments.deletedAt),
+        ),
+      );
   }
 }

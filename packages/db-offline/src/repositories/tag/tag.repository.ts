@@ -11,18 +11,46 @@ export class TagRepository {
   }
 
   async findById(id: string, userId: string) {
-    return (await this.db.select().from(tags).where(and(eq(tags.id, id), eq(tags.userId, userId), isNull(tags.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(tags)
+          .where(
+            and(
+              eq(tags.id, id),
+              eq(tags.userId, userId),
+              isNull(tags.deletedAt),
+            ),
+          )
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   listByUser(userId: string) {
-    return this.db.select().from(tags).where(and(eq(tags.userId, userId), isNull(tags.deletedAt))).orderBy(asc(tags.name));
+    return this.db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.userId, userId), isNull(tags.deletedAt)))
+      .orderBy(asc(tags.name));
   }
 
   update(id: string, userId: string, data: UpdateTagInput) {
-    return this.db.update(tags).set(data).where(and(eq(tags.id, id), eq(tags.userId, userId), isNull(tags.deletedAt)));
+    return this.db
+      .update(tags)
+      .set(data)
+      .where(
+        and(eq(tags.id, id), eq(tags.userId, userId), isNull(tags.deletedAt)),
+      );
   }
 
   delete(id: string, userId: string) {
-    return this.db.update(tags).set({ deletedAt: new Date().toISOString() }).where(and(eq(tags.id, id), eq(tags.userId, userId), isNull(tags.deletedAt)));
+    return this.db
+      .update(tags)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(eq(tags.id, id), eq(tags.userId, userId), isNull(tags.deletedAt)),
+      );
   }
 }

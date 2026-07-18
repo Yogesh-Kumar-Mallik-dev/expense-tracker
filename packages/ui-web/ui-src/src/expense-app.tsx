@@ -14,10 +14,12 @@ export function ExpenseApp({
   application,
   platform = "web",
   initialAuthMode = "login",
+  telemetryEndpoint,
 }: {
   application: ExpenseApplication;
   platform?: "web" | "desktop";
   initialAuthMode?: "login" | "signup";
+  telemetryEndpoint?: string;
 }) {
   const [auth, setAuth] = useState<AuthState>(() =>
     application.session.state(),
@@ -29,8 +31,9 @@ export function ExpenseApp({
         environment: "client",
         runtime: platform === "desktop" ? "desktop" : "browser",
         level: "INFO",
+        ...(telemetryEndpoint ? { telemetryEndpoint } : {}),
       }),
-    [platform],
+    [platform, telemetryEndpoint],
   );
   useEffect(() => {
     const unsubscribe = application.session.subscribe(setAuth);

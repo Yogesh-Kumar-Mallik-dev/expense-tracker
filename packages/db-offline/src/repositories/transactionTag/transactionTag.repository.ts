@@ -20,15 +20,20 @@ export class TransactionTagRepository {
     return this.db
       .select({ assignment: transactionTags, tag: tags })
       .from(transactionTags)
-      .innerJoin(transactions, eq(transactionTags.transactionId, transactions.id))
+      .innerJoin(
+        transactions,
+        eq(transactionTags.transactionId, transactions.id),
+      )
       .innerJoin(tags, eq(transactionTags.tagId, tags.id))
-      .where(and(
-        eq(transactionTags.transactionId, transactionId),
-        eq(transactions.userId, userId),
-        isNull(transactionTags.deletedAt),
-        isNull(transactions.deletedAt),
-        isNull(tags.deletedAt),
-      ))
+      .where(
+        and(
+          eq(transactionTags.transactionId, transactionId),
+          eq(transactions.userId, userId),
+          isNull(transactionTags.deletedAt),
+          isNull(transactions.deletedAt),
+          isNull(tags.deletedAt),
+        ),
+      )
       .orderBy(asc(transactionTags.createdAt));
   }
 
@@ -36,13 +41,24 @@ export class TransactionTagRepository {
     const ownedTransaction = this.db
       .select({ id: transactions.id })
       .from(transactions)
-      .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId), isNull(transactions.deletedAt)));
+      .where(
+        and(
+          eq(transactions.id, transactionId),
+          eq(transactions.userId, userId),
+          isNull(transactions.deletedAt),
+        ),
+      );
 
-    return this.db.update(transactionTags).set({ deletedAt: new Date().toISOString() }).where(and(
-      eq(transactionTags.transactionId, transactionId),
-      eq(transactionTags.tagId, tagId),
-      isNull(transactionTags.deletedAt),
-      eq(transactionTags.transactionId, ownedTransaction),
-    ));
+    return this.db
+      .update(transactionTags)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(transactionTags.transactionId, transactionId),
+          eq(transactionTags.tagId, tagId),
+          isNull(transactionTags.deletedAt),
+          eq(transactionTags.transactionId, ownedTransaction),
+        ),
+      );
   }
 }

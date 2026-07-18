@@ -18,7 +18,9 @@ export function setOfflineClient<T extends OfflineClient>(client: T): T {
 
 export function getOfflineClient(): OfflineClient {
   if (!currentClient) {
-    throw new Error("Offline database has not been initialized for this platform");
+    throw new Error(
+      "Offline database has not been initialized for this platform",
+    );
   }
   return currentClient;
 }

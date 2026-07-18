@@ -1,5 +1,8 @@
 import type { AbstractPowerSyncDatabase } from "@powersync/common";
-import { DrizzleAppSchema, wrapPowerSyncWithDrizzle } from "@powersync/drizzle-driver";
+import {
+  DrizzleAppSchema,
+  wrapPowerSyncWithDrizzle,
+} from "@powersync/drizzle-driver";
 import {
   drizzleSchema,
   pendingAttachmentUploads,

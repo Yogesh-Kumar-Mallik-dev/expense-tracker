@@ -106,8 +106,9 @@ and more truthful.
   reconciliation command and model are implemented.
 - Payee/merchant domain distinct from transaction description.
 - Notification domain.
-- Activation/switching for validated restore datasets. Restore staging and
-  recurring schedule persistence/manual posting are implemented.
+- Replacement of the server-authoritative dataset from a restore. Validated
+  restores can already be opened in an isolated local database with
+  synchronization disabled.
 - Batch transaction mutation endpoints.
 
 These capabilities remain absent and are not approximated from a paginated

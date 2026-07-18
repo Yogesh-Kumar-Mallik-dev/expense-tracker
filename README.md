@@ -5,28 +5,28 @@ built as a **Turborepo** monorepo.
 
 The project consists of a single backend and three frontend hosts. Shared
 services, SQLite drivers, and PowerSync integration are composed into
-restart-safe web and desktop runtimes. Mobile remains a scaffold.
+restart-safe web, desktop, and mobile runtimes.
 
 ## Capability status
 
-| Capability               | API                                             | Web                          | Desktop                                  | Mobile        |
-| ------------------------ | ----------------------------------------------- | ---------------------------- | ---------------------------------------- | ------------- |
-| Authentication           | Implemented                                     | HttpOnly refresh cookie      | OS-vault refresh credential              | Planned       |
-| Transaction CRUD         | Implemented                                     | Local-first                  | Local-first                              | Planned       |
-| Local SQLite             | Package implemented                             | Per-user WASQLite connected  | Per-user native SQLite connected         | Not connected |
-| PowerSync                | Upload/download infrastructure                  | Connected when configured    | Rust connector connected when configured | Not connected |
-| Offline restart          | N/A                                             | Local data and upload queue  | Local data and upload queue              | Not delivered |
-| Attachments              | API implemented                                 | Upload/download/delete       | Upload/download/delete                   | Planned       |
-| Budget limits            | API/service implemented                         | CRUD and category assignment | CRUD and category assignment             | Planned       |
-| Envelope mode            | Sync and conflict contracts implemented         | Allocation and transfers     | Allocation and transfers                 | Planned       |
-| Accounts/categories/tags | Implemented                                     | CRUD/archive workflows       | CRUD/archive workflows                   | Planned       |
-| Profile/devices          | Implemented                                     | Edit/list/remove             | Edit/list/remove                         | Planned       |
-| Email change             | Verified token workflow                         | Implemented                  | Web verification link                    | Planned       |
-| Reports                  | Period/category/net-worth history               | Local-first with drill-down  | Local-first with drill-down              | Planned       |
-| CSV transactions         | Domain format                                   | Import/export                | Import/export                            | Planned       |
-| Backup                   | Versioned snapshot and isolated restore staging | Export/stage restore         | Export/stage restore                     | Planned       |
-| Schedules                | Authoritative idempotent occurrences            | Manual post/skip             | Manual post/skip                         | Planned       |
-| Reconciliation           | Per-account atomic statement command            | Statement workflow           | Statement workflow                       | Planned       |
+| Capability               | API                                             | Web                          | Desktop                                  | Mobile                    |
+| ------------------------ | ----------------------------------------------- | ---------------------------- | ---------------------------------------- | ------------------------- |
+| Authentication           | Implemented                                     | HttpOnly refresh cookie      | OS-vault refresh credential              | SecureStore session       |
+| Transaction CRUD         | Implemented                                     | Local-first                  | Local-first                              | Local-first register      |
+| Local SQLite             | Package implemented                             | Per-user WASQLite connected  | Per-user native SQLite connected         | Per-user native SQLite    |
+| PowerSync                | Upload/download infrastructure                  | Connected when configured    | Rust connector connected when configured | Connected when configured |
+| Offline restart          | N/A                                             | Local data and upload queue  | Local data and upload queue              | Local transactions        |
+| Attachments              | API implemented                                 | Upload/download/delete       | Upload/download/delete                   | Planned                   |
+| Budget limits            | API/service implemented                         | CRUD and category assignment | CRUD and category assignment             | Planned                   |
+| Envelope mode            | Sync and conflict contracts implemented         | Allocation and transfers     | Allocation and transfers                 | Planned                   |
+| Accounts/categories/tags | Implemented                                     | CRUD/archive workflows       | CRUD/archive workflows                   | Planned                   |
+| Profile/devices          | Implemented                                     | Edit/list/remove             | Edit/list/remove                         | Planned                   |
+| Email change             | Verified token workflow                         | Implemented                  | Web verification link                    | Planned                   |
+| Reports                  | Period/category/net-worth history               | Local-first with drill-down  | Local-first with drill-down              | Planned                   |
+| CSV transactions         | Domain format                                   | Import/export                | Import/export                            | Planned                   |
+| Backup                   | Versioned snapshot and isolated restore staging | Export/open isolated restore | Export/open isolated restore             | Open isolated restore     |
+| Schedules                | Authoritative idempotent occurrences            | Manual post/skip             | Manual post/skip                         | Planned                   |
+| Reconciliation           | Per-account atomic statement command            | Statement workflow           | Statement workflow                       | Planned                   |
 
 ---
 

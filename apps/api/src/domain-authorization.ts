@@ -55,7 +55,8 @@ export async function validateTransactionRelationships(
         })
       : null,
   ]);
-  if (!source) forbidden("Source account is not owned by this user", ["accountId"]);
+  if (!source)
+    forbidden("Source account is not owned by this user", ["accountId"]);
   if (source.isArchived)
     invalid("Archived accounts cannot receive new transactions", ["accountId"]);
   if (values.currency !== source.currency)
@@ -65,7 +66,9 @@ export async function validateTransactionRelationships(
       "transferAccountId",
     ]);
   if (destination?.isArchived)
-    invalid("Archived accounts cannot receive transfers", ["transferAccountId"]);
+    invalid("Archived accounts cannot receive transfers", [
+      "transferAccountId",
+    ]);
   if (destination && destination.currency !== source.currency)
     invalid("Transfer accounts must use the same currency", [
       "transferAccountId",
@@ -73,7 +76,9 @@ export async function validateTransactionRelationships(
   if (values.categoryId && !category)
     forbidden("Category is not owned by this user", ["categoryId"]);
   if (category?.isArchived)
-    invalid("Archived categories cannot receive new transactions", ["categoryId"]);
+    invalid("Archived categories cannot receive new transactions", [
+      "categoryId",
+    ]);
   if (
     category &&
     ((values.type === "EXPENSE" && category.type !== "EXPENSE") ||
@@ -113,7 +118,8 @@ export async function requireOwnedCategory(
     where: { id: categoryId, userId, deletedAt: null },
     select: { id: true },
   });
-  if (!category) forbidden("Category is not owned by this user", ["categoryId"]);
+  if (!category)
+    forbidden("Category is not owned by this user", ["categoryId"]);
 }
 
 export async function requireOwnedTag(

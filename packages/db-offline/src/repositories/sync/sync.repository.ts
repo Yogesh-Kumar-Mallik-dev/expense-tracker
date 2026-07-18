@@ -11,26 +11,56 @@ export class SyncRepository {
   }
 
   async findByDevice(deviceId: string, userId: string) {
-    return (await this.db.select().from(syncStates).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId), isNull(syncStates.deletedAt))).limit(1))[0] ?? null;
+    return (
+      (
+        await this.db
+          .select()
+          .from(syncStates)
+          .where(
+            and(
+              eq(syncStates.deviceId, deviceId),
+              eq(syncStates.userId, userId),
+              isNull(syncStates.deletedAt),
+            ),
+          )
+          .limit(1)
+      )[0] ?? null
+    );
   }
 
   listByUser(userId: string) {
-    return this.db.select().from(syncStates).where(and(eq(syncStates.userId, userId), isNull(syncStates.deletedAt))).orderBy(desc(syncStates.updatedAt));
+    return this.db
+      .select()
+      .from(syncStates)
+      .where(and(eq(syncStates.userId, userId), isNull(syncStates.deletedAt)))
+      .orderBy(desc(syncStates.updatedAt));
   }
 
   upsertForDevice(data: CreateSyncStateInput) {
-    return this.db.insert(syncStates).values(data).onConflictDoUpdate({
-      target: syncStates.deviceId,
-      set: {
-        checkpoint: data.checkpoint ?? null,
-        lastSyncedAt: data.lastSyncedAt ?? null,
-        updatedAt: data.updatedAt,
-        deletedAt: null,
-      },
-    });
+    return this.db
+      .insert(syncStates)
+      .values(data)
+      .onConflictDoUpdate({
+        target: syncStates.deviceId,
+        set: {
+          checkpoint: data.checkpoint ?? null,
+          lastSyncedAt: data.lastSyncedAt ?? null,
+          updatedAt: data.updatedAt,
+          deletedAt: null,
+        },
+      });
   }
 
   deleteByDevice(deviceId: string, userId: string) {
-    return this.db.update(syncStates).set({ deletedAt: new Date().toISOString() }).where(and(eq(syncStates.deviceId, deviceId), eq(syncStates.userId, userId), isNull(syncStates.deletedAt)));
+    return this.db
+      .update(syncStates)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(syncStates.deviceId, deviceId),
+          eq(syncStates.userId, userId),
+          isNull(syncStates.deletedAt),
+        ),
+      );
   }
 }

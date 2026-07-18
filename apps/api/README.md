@@ -106,9 +106,9 @@ Every API response includes rate-limit headers. Exceeding a policy returns
 | Health          | `/api/health`                                                                                    |
 | Authentication  | `/api/auth/register`, `/login`, `/refresh`, `/logout`, `/confirm-email`                          |
 | Public keys     | `/api/auth/keys`                                                                                 |
-| Profile         | `/api/users/me`, `/api/users/me/email-change`                                                    |
+| Profile         | `/api/users/me`, `/api/users/me/email-change`, `/api/users/me/deletion`                          |
 | Backup          | `/api/users/me/backup`                                                                           |
-| Restore staging | `/api/users/me/restore-datasets`                                                                 |
+| Restore staging | `/api/users/me/restore-datasets`, `/api/users/me/restore-datasets/:id`                           |
 | Schedules       | `/api/schedules`, `/api/schedules/occurrences/:id`                                               |
 | Reconciliation  | `/api/accounts/:id/reconcile`                                                                    |
 | Net worth       | `/api/reporting/net-worth-history`                                                               |
@@ -117,3 +117,5 @@ Every API response includes rate-limit headers. Exceeding a policy returns
 | Reporting       | `/api/reporting/account-balances`, `/budget-usage`, `/period-spending`, `/category-spending`     |
 | PowerSync       | `/api/powersync/credentials`, `/api/powersync/upload`                                            |
 | Binary files    | `/api/attachments/upload`, `/complete`, `/:id/download`                                          |
+| Telemetry       | `/api/telemetry` (optional server-side forwarding)                                               |
+| Operations      | `/api/internal/retention` (scheduler secret required)                                            |

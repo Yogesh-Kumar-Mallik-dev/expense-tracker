@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   createOfflineServices,
   PersistentAttachmentQueue,
+  restoreBackupSnapshot,
   users,
   type OfflineServices,
 } from "@expense-tracker/db-offline";
@@ -13,6 +14,7 @@ import {
   type SessionController,
   type SyncController,
   type ExpenseDataClient,
+  type Backup,
 } from "@expense-tracker/client-core";
 
 export class DesktopOfflineRuntime
@@ -144,6 +146,24 @@ export class DesktopOfflineRuntime
     await this.queue?.clear();
     await this.client?.powerSync.disconnectAndClear({ clearLocal: true });
     await this.close();
+  }
+  async activateRestore(userId: string, datasetId: string, snapshot: Backup) {
+    await this.close();
+    if (snapshot.user.id !== userId)
+      throw new Error("Restore owner does not match the active session");
+    const client = createDesktopDatabase({
+      filename: `expense-tracker-restored-${datasetId}.db`,
+    });
+    await restoreBackupSnapshot(client.db, snapshot);
+    this.client = client;
+    this.value = createOfflineServices(client.db);
+    this.set({
+      status: "not-configured",
+      lastSyncedAt: null,
+      pendingWrites: 0,
+      error:
+        "Viewing an isolated restored dataset. Synchronization is disabled.",
+    });
   }
   state() {
     return this.current;

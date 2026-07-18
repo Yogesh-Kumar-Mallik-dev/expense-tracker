@@ -17,11 +17,16 @@ export const GET = route(async (request: Request, context: Context) => {
 
 export const POST = route(async (request: Request, context: Context) => {
   const userId = await requireUser(request);
-  const input = z.object({
-    targetName: z.string().trim().min(1).max(120),
-    targetAmount: z.string().regex(/^\d+(?:\.\d{1,4})?$/),
-    targetRolloverPolicy: z.enum(["NONE", "POSITIVE_ONLY", "FULL"]),
-    expectedSourceUpdatedAt: z.iso.datetime(),
-  }).parse(await body(request));
-  return ok(await convertBudgetMode((await context.params).id, userId, input), 201);
+  const input = z
+    .object({
+      targetName: z.string().trim().min(1).max(120),
+      targetAmount: z.string().regex(/^\d+(?:\.\d{1,4})?$/),
+      targetRolloverPolicy: z.enum(["NONE", "POSITIVE_ONLY", "FULL"]),
+      expectedSourceUpdatedAt: z.iso.datetime(),
+    })
+    .parse(await body(request));
+  return ok(
+    await convertBudgetMode((await context.params).id, userId, input),
+    201,
+  );
 });

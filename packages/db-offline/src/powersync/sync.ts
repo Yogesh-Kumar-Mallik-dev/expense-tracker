@@ -1,4 +1,7 @@
-import type { AbstractPowerSyncDatabase, PowerSyncBackendConnector } from "@powersync/common";
+import type {
+  AbstractPowerSyncDatabase,
+  PowerSyncBackendConnector,
+} from "@powersync/common";
 
 export function connectSync(
   database: AbstractPowerSyncDatabase,

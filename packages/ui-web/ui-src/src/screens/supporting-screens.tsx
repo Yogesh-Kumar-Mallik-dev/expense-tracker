@@ -1176,13 +1176,21 @@ export function SettingsScreen({
   const [devices, setDevices] = useState<Device[]>([]);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [deletionScheduledFor, setDeletionScheduledFor] = useState<
+    string | null
+  >(null);
   const loadDevices = useCallback(
     () => api.devices().then((result) => setDevices(result.data)),
     [api],
   );
   useEffect(() => {
     void loadDevices().catch(() => setMessage("Devices could not be loaded."));
-  }, [loadDevices]);
+    void api
+      .deletionRequest()
+      .then((result) =>
+        setDeletionScheduledFor(result.data?.scheduledFor ?? null),
+      );
+  }, [api, loadDevices]);
   const saveProfile = async () => {
     if (!/^[A-Za-z]{3}$/.test(currency))
       return setMessage("Currency must be a three-letter code.");
@@ -1445,9 +1453,22 @@ export function SettingsScreen({
                   ),
                 )
                 .then((result) =>
-                  setMessage(
-                    `Backup validated as “${result.data.name}”. The active synchronized data was not overwritten.`,
-                  ),
+                  api.restoreDataset(result.data.id).then(async (snapshot) => {
+                    if (!localDatabase.activateRestore) {
+                      setMessage(
+                        `Backup validated as “${result.data.name}”. This platform cannot open isolated datasets.`,
+                      );
+                      return;
+                    }
+                    await localDatabase.activateRestore(
+                      session.user.id,
+                      result.data.id,
+                      snapshot.data,
+                    );
+                    setMessage(
+                      `Opened “${result.data.name}” as an isolated local dataset. Synchronization is disabled for this copy.`,
+                    );
+                  }),
                 )
                 .catch((caught) =>
                   setMessage(
@@ -1491,7 +1512,11 @@ export function SettingsScreen({
       >
         <div>
           <strong id="delete-account-title">Delete account</strong>
-          <p>This tombstones the account and prevents future sign-in.</p>
+          <p>
+            This signs out every session and schedules personal and financial
+            data for redaction after 30 days. Signing in again during the grace
+            period allows cancellation through the API.
+          </p>
         </div>
         <Button
           variant="outline"
@@ -1499,7 +1524,7 @@ export function SettingsScreen({
           onClick={() => {
             if (
               !window.confirm(
-                "Delete your account? This action cannot be undone.",
+                "Schedule account deletion in 30 days and sign out all sessions?",
               )
             )
               return;
@@ -1517,6 +1542,29 @@ export function SettingsScreen({
         >
           Delete account
         </Button>
+        {deletionScheduledFor ? (
+          <div>
+            <p role="status">
+              Deletion is scheduled for{" "}
+              {new Intl.DateTimeFormat(undefined, {
+                dateStyle: "long",
+              }).format(new Date(deletionScheduledFor))}
+              .
+            </p>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() =>
+                void api.cancelDeletion().then(() => {
+                  setDeletionScheduledFor(null);
+                  setMessage("Scheduled deletion cancelled.");
+                })
+              }
+            >
+              Cancel deletion
+            </Button>
+          </div>
+        ) : null}
       </section>
       <section className="settings-action" aria-labelledby="remove-local-title">
         <div>

@@ -393,6 +393,21 @@ export class RestExpenseClient implements ExpenseDataClient {
   deleteProfile() {
     return this.requestEmpty("/api/users/me", { method: "DELETE" });
   }
+  deletionRequest() {
+    return this.request(
+      "/api/users/me/deletion",
+      z
+        .object({
+          id: z.string().uuid(),
+          requestedAt: z.string(),
+          scheduledFor: z.string(),
+        })
+        .nullable(),
+    );
+  }
+  cancelDeletion() {
+    return this.requestEmpty("/api/users/me/deletion", { method: "DELETE" });
+  }
   requestEmailChange(email: string) {
     return this.request(
       "/api/users/me/email-change",
@@ -421,6 +436,9 @@ export class RestExpenseClient implements ExpenseDataClient {
       "/api/users/me/restore-datasets",
       z.array(restoreDatasetSchema),
     );
+  }
+  restoreDataset(id: string) {
+    return this.request(`/api/users/me/restore-datasets/${id}`, backupSchema);
   }
   reconcileAccount(
     accountId: string,
@@ -467,7 +485,10 @@ export class RestExpenseClient implements ExpenseDataClient {
     });
   }
 
-  async registerDevice(name: string, platform: "WEB" | "DESKTOP") {
+  async registerDevice(
+    name: string,
+    platform: "WEB" | "DESKTOP" | "IOS" | "ANDROID",
+  ) {
     return this.request(
       "/api/devices",
       z.object({

@@ -10,7 +10,10 @@
     "LOG_STACKS",
     "NODE_ENV",
     "NO_COLOR",
+    "RETENTION_JOB_SECRET",
     "TAURI_DEV_HOST",
+    "TELEMETRY_INGEST_TOKEN",
+    "TELEMETRY_INGEST_URL",
     "TRUST_PROXY"
   ],
   "tasks": {

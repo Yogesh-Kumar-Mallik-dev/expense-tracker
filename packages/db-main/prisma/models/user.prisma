@@ -20,7 +20,22 @@ model User {
   transactions      Transaction[]
   schedules         TransactionSchedule[]
   restoreDatasets   RestoreDataset[]
+  deletionRequests  DataDeletionRequest[]
   emailChangeTokens EmailChangeToken[]
+}
+
+model DataDeletionRequest {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  requestedAt  DateTime  @default(now()) @db.Timestamptz(3)
+  scheduledFor DateTime  @db.Timestamptz(3)
+  cancelledAt  DateTime? @db.Timestamptz(3)
+  completedAt  DateTime? @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledFor, completedAt])
+  @@index([userId, requestedAt])
 }
 
 model EmailChangeToken {
