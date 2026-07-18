@@ -213,7 +213,16 @@ export function TransactionsScreen({
         <Alert>
           <AlertTitle>An account is required</AlertTitle>
           <AlertDescription>
-            Create an account before recording a transaction.
+            Create an account before recording a transaction.{" "}
+            <button
+              className="inline-action"
+              type="button"
+              onClick={() => {
+                window.location.hash = "/accounts";
+              }}
+            >
+              Go to Accounts
+            </button>
           </AlertDescription>
         </Alert>
       ) : null}

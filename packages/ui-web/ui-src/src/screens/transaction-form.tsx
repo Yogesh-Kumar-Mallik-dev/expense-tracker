@@ -18,6 +18,8 @@ import type {
   ExpenseDataClient,
   Transaction,
   TransactionInput,
+  Tag,
+  Attachment,
 } from "../api";
 import { SelectField } from "./select-field";
 
@@ -48,6 +50,14 @@ export function TransactionForm({
   const [occurredAt, setOccurredAt] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [savedTransactionId, setSavedTransactionId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +72,34 @@ export function TransactionForm({
       toLocalDateTime(transaction?.occurredAt ?? new Date().toISOString()),
     );
     setError("");
-  }, [accounts, open, transaction]);
+    setFile(null);
+    setSavedTransactionId(transaction?.id ?? null);
+    void api
+      .tags()
+      .then((result) => setTags(result.data))
+      .catch(() => setTags([]));
+    if (transaction) {
+      void Promise.all([
+        api.transactionTags(transaction.id),
+        api.attachments(transaction.id),
+      ])
+        .then(([tagResult, attachmentResult]) => {
+          const ids = tagResult.data.map((item) => item.tagId);
+          setExistingTags(ids);
+          setSelectedTags(ids);
+          setAttachments(attachmentResult.data);
+        })
+        .catch(() =>
+          setError(
+            "Transaction loaded, but tags or attachments could not be loaded.",
+          ),
+        );
+    } else {
+      setExistingTags([]);
+      setSelectedTags([]);
+      setAttachments([]);
+    }
+  }, [accounts, api, open, transaction]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -92,8 +129,32 @@ export function TransactionForm({
       occurredAt: new Date(occurredAt).toISOString(),
     };
     try {
-      if (transaction) await api.updateTransaction(transaction.id, value);
-      else await api.createTransaction(value);
+      let transactionId = savedTransactionId;
+      if (transactionId) await api.updateTransaction(transactionId, value);
+      else {
+        const created = await api.createTransaction(value);
+        transactionId = created.data.id;
+        setSavedTransactionId(transactionId);
+      }
+      const additions = selectedTags.filter((id) => !existingTags.includes(id));
+      const removals = existingTags.filter((id) => !selectedTags.includes(id));
+      const tagResults = await Promise.allSettled([
+        ...additions.map((id) => api.addTransactionTag(transactionId!, id)),
+        ...removals.map((id) => api.removeTransactionTag(transactionId!, id)),
+      ]);
+      if (tagResults.some((result) => result.status === "rejected"))
+        throw new Error(
+          "Transaction saved, but some tag changes failed. Retry to finish.",
+        );
+      if (file) {
+        try {
+          await api.uploadAttachment(transactionId, file);
+        } catch {
+          throw new Error(
+            "Transaction saved, but the attachment upload failed. Your input is preserved; retry to finish.",
+          );
+        }
+      }
       await onSaved();
     } catch (caught) {
       setError(
@@ -216,6 +277,84 @@ export function TransactionForm({
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
+          </div>
+          <fieldset className="field field-wide">
+            <legend>Tags</legend>
+            <div className="checkbox-list">
+              {tags.map((tag) => (
+                <label key={tag.id}>
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(tag.id)}
+                    onChange={(event) =>
+                      setSelectedTags((current) =>
+                        event.target.checked
+                          ? [...current, tag.id]
+                          : current.filter((id) => id !== tag.id),
+                      )
+                    }
+                  />
+                  {tag.name}
+                </label>
+              ))}
+              {!tags.length ? (
+                <small>
+                  Create tags from Categories &amp; tags to use them here.
+                </small>
+              ) : null}
+            </div>
+          </fieldset>
+          <div className="field field-wide">
+            <Label htmlFor="transaction-attachment">Attachment</Label>
+            <Input
+              id="transaction-attachment"
+              type="file"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            />
+            {attachments.map((attachment) => (
+              <div className="attachment-row" key={attachment.id}>
+                <span>
+                  {attachment.fileName} ({attachment.sizeBytes} bytes)
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    void api
+                      .attachmentDownload(attachment.id)
+                      .then((result) =>
+                        window.open(
+                          result.data.downloadUrl,
+                          "_blank",
+                          "noopener,noreferrer",
+                        ),
+                      )
+                  }
+                >
+                  Download
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    window.confirm(`Delete ${attachment.fileName}?`) &&
+                    void api
+                      .deleteAttachment(attachment.id)
+                      .then(() =>
+                        setAttachments((current) =>
+                          current.filter((item) => item.id !== attachment.id),
+                        ),
+                      )
+                  }
+                >
+                  Delete
+                </Button>
+              </div>
+            ))}
+            <small>
+              Upload is completed after the transaction is saved. Failed uploads
+              can be retried without recreating the transaction.
+            </small>
           </div>
           <div className="field field-wide">
             <Label htmlFor="transaction-note">Note</Label>

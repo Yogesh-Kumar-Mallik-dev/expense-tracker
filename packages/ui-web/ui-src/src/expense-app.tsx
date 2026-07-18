@@ -37,6 +37,17 @@ export function ExpenseApp({
     void application.session.restore();
     return unsubscribe;
   }, [application]);
+  useEffect(() => {
+    if (auth.status !== "authenticated") return;
+    const controller = new AbortController();
+    void application.data
+      .accounts(controller.signal)
+      .then((result) => {
+        if (!result.data.length) window.location.hash = "/accounts";
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [application, auth]);
 
   if (auth.status === "restoring")
     return <main className="auth-layout">Restoring your session…</main>;

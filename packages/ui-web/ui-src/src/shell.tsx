@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Settings,
   SlidersHorizontal,
+  Tags,
   X,
 } from "lucide-react";
 import React from "react";
@@ -31,11 +32,13 @@ import {
   SyncScreen,
 } from "./screens/supporting-screens";
 import { TransactionsScreen } from "./screens/transactions-screen";
+import { ReferenceDataScreen } from "./screens/reference-data-screen";
 
 export type AppRoute =
   | "overview"
   | "transactions"
   | "accounts"
+  | "categories"
   | "budgets"
   | "reports"
   | "sync"
@@ -47,6 +50,7 @@ const routes: Array<{
 }> = [
   { route: "transactions", label: "Transactions", icon: ReceiptText },
   { route: "accounts", label: "Accounts", icon: Landmark },
+  { route: "categories", label: "Categories & tags", icon: Tags },
   { route: "budgets", label: "Budgets", icon: SlidersHorizontal },
   { route: "reports", label: "Reports", icon: ChartNoAxesColumn },
   { route: "sync", label: "Synchronization", icon: RefreshCw },
@@ -169,16 +173,26 @@ export function AppShell({
             <TransactionsScreen api={api} onUnauthorized={onUnauthorized} />
           ) : null}
           {route === "accounts" ? (
-            <AccountsScreen api={api} onUnauthorized={onUnauthorized} />
+            <AccountsScreen
+              api={api}
+              onUnauthorized={onUnauthorized}
+              defaultCurrency={session.user.currency}
+            />
           ) : null}
+          {route === "categories" ? <ReferenceDataScreen api={api} /> : null}
           {route === "budgets" ? (
-            <BudgetsScreen api={api} onUnauthorized={onUnauthorized} />
+            <BudgetsScreen
+              api={api}
+              onUnauthorized={onUnauthorized}
+              defaultCurrency={session.user.currency}
+            />
           ) : null}
           {route === "reports" ? <ReportsScreen /> : null}
           {route === "sync" ? <SyncScreen /> : null}
           {route === "settings" ? (
             <SettingsScreen
               session={session}
+              api={api}
               onLogout={onLogout}
               diagnostics={diagnostics}
             />

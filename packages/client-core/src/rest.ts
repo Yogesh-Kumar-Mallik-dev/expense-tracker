@@ -1,7 +1,16 @@
 import { z } from "zod";
-import type { ExpenseDataClient, Result, SessionController } from "./application";
+import type {
+  ExpenseDataClient,
+  Result,
+  SessionController,
+} from "./application";
 import {
   accountSchema,
+  attachmentSchema,
+  deviceSchema,
+  assignmentSchema,
+  envelopeAllocationSchema,
+  envelopeTransferSchema,
   balanceSchema,
   budgetSchema,
   budgetUsageSchema,
@@ -9,12 +18,18 @@ import {
   pageMetaSchema,
   sessionSchema,
   transactionSchema,
+  transactionTagSchema,
+  tagSchema,
   type PageMeta,
   type RegistrationInput,
   type Session,
   type User,
   type TransactionFilters,
   type TransactionInput,
+  type AccountInput,
+  type CategoryInput,
+  type TagInput,
+  type BudgetInput,
 } from "./contracts";
 import { ApiError, ResponseValidationError } from "./errors";
 import type { AuthenticationTransport } from "./session";
@@ -30,8 +45,30 @@ export class RestExpenseClient implements ExpenseDataClient {
     private readonly access: AccessController,
   ) {}
 
-  accounts(signal?: AbortSignal) {
-    return this.collection("/api/accounts?page=1&pageSize=100", accountSchema, signal);
+  accounts(signal?: AbortSignal, includeArchived = false) {
+    return this.collection(
+      `/api/accounts?page=1&pageSize=100&includeArchived=${includeArchived}`,
+      accountSchema,
+      signal,
+    );
+  }
+  createAccount(value: AccountInput) {
+    return this.request("/api/accounts", accountSchema, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  updateAccount(
+    id: string,
+    value: Partial<AccountInput> & { isArchived?: boolean },
+  ) {
+    return this.requestEmpty(`/api/accounts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    });
+  }
+  deleteAccount(id: string) {
+    return this.requestEmpty(`/api/accounts/${id}`, { method: "DELETE" });
   }
   balances(signal?: AbortSignal) {
     return this.request(
@@ -40,12 +77,48 @@ export class RestExpenseClient implements ExpenseDataClient {
       signal ? { signal } : {},
     );
   }
-  categories(signal?: AbortSignal) {
+  categories(signal?: AbortSignal, includeArchived = false) {
     return this.collection(
-      "/api/categories?page=1&pageSize=100",
+      `/api/categories?page=1&pageSize=100&includeArchived=${includeArchived}`,
       categorySchema,
       signal,
     );
+  }
+  createCategory(value: CategoryInput) {
+    return this.request("/api/categories", categorySchema, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  updateCategory(
+    id: string,
+    value: Partial<CategoryInput> & { isArchived?: boolean },
+  ) {
+    return this.requestEmpty(`/api/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    });
+  }
+  deleteCategory(id: string) {
+    return this.requestEmpty(`/api/categories/${id}`, { method: "DELETE" });
+  }
+  tags(signal?: AbortSignal) {
+    return this.collection("/api/tags?page=1&pageSize=100", tagSchema, signal);
+  }
+  createTag(value: TagInput) {
+    return this.request("/api/tags", tagSchema, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  updateTag(id: string, value: TagInput) {
+    return this.requestEmpty(`/api/tags/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    });
+  }
+  deleteTag(id: string) {
+    return this.requestEmpty(`/api/tags/${id}`, { method: "DELETE" });
   }
   transactions(filters: TransactionFilters, signal?: AbortSignal) {
     const query = new URLSearchParams({
@@ -58,7 +131,11 @@ export class RestExpenseClient implements ExpenseDataClient {
       query.set("from", new Date(`${filters.from}T00:00:00`).toISOString());
     if (filters.to)
       query.set("to", new Date(`${filters.to}T23:59:59.999`).toISOString());
-    return this.collection(`/api/transactions?${query}`, transactionSchema, signal);
+    return this.collection(
+      `/api/transactions?${query}`,
+      transactionSchema,
+      signal,
+    );
   }
   createTransaction(value: TransactionInput) {
     return this.request("/api/transactions", transactionSchema, {
@@ -75,6 +152,84 @@ export class RestExpenseClient implements ExpenseDataClient {
   deleteTransaction(id: string) {
     return this.requestEmpty(`/api/transactions/${id}`, { method: "DELETE" });
   }
+  transactionTags(transactionId: string) {
+    return this.collection(
+      `/api/transactions/${transactionId}/tags?page=1&pageSize=100`,
+      transactionTagSchema,
+    );
+  }
+  addTransactionTag(transactionId: string, tagId: string) {
+    return this.requestEmpty(`/api/transactions/${transactionId}/tags`, {
+      method: "POST",
+      body: JSON.stringify({ tagId }),
+    });
+  }
+  removeTransactionTag(transactionId: string, tagId: string) {
+    return this.requestEmpty(`/api/transactions/${transactionId}/tags`, {
+      method: "DELETE",
+      body: JSON.stringify({ tagId }),
+    });
+  }
+  attachments(transactionId: string) {
+    return this.collection(
+      `/api/attachments?transactionId=${transactionId}&page=1&pageSize=100`,
+      attachmentSchema,
+    );
+  }
+  async uploadAttachment(
+    transactionId: string,
+    file: Blob & { name: string; type: string },
+  ) {
+    const upload = await this.request(
+      "/api/attachments/upload",
+      z.object({
+        attachmentId: z.string().uuid(),
+        storageKey: z.string(),
+        method: z.literal("PUT"),
+        uploadUrl: z.string().url(),
+        headers: z.record(z.string(), z.string()),
+      }),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transactionId,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          sizeBytes: file.size,
+        }),
+      },
+    );
+    const uploaded = await fetch(upload.data.uploadUrl, {
+      method: "PUT",
+      headers: upload.data.headers,
+      body: file,
+    });
+    if (!uploaded.ok)
+      throw new ApiError(
+        uploaded.status,
+        "The attachment bytes could not be uploaded",
+      );
+    return this.request("/api/attachments/complete", attachmentSchema, {
+      method: "POST",
+      body: JSON.stringify({
+        attachmentId: upload.data.attachmentId,
+        transactionId,
+        fileName: file.name,
+        storageKey: upload.data.storageKey,
+        mimeType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+      }),
+    });
+  }
+  deleteAttachment(id: string) {
+    return this.requestEmpty(`/api/attachments/${id}`, { method: "DELETE" });
+  }
+  attachmentDownload(id: string) {
+    return this.request(
+      `/api/attachments/${id}/download`,
+      z.object({ downloadUrl: z.string().url(), expiresAt: z.string() }),
+    );
+  }
   budgets(from: string, to: string, signal?: AbortSignal) {
     return this.collection(
       `/api/budgets?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=1&pageSize=100`,
@@ -88,6 +243,105 @@ export class RestExpenseClient implements ExpenseDataClient {
       z.array(budgetUsageSchema),
       signal ? { signal } : {},
     );
+  }
+  createBudget(value: BudgetInput) {
+    return this.request("/api/budgets", budgetSchema, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  updateBudget(id: string, value: Partial<BudgetInput>) {
+    return this.requestEmpty(`/api/budgets/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    });
+  }
+  deleteBudget(id: string) {
+    return this.requestEmpty(`/api/budgets/${id}`, { method: "DELETE" });
+  }
+  assignBudgetCategory(budgetId: string, categoryId: string) {
+    return this.requestEmpty(`/api/budgets/${budgetId}/categories`, {
+      method: "POST",
+      body: JSON.stringify({ categoryId }),
+    });
+  }
+  removeBudgetCategory(budgetId: string, categoryId: string) {
+    return this.requestEmpty(`/api/budgets/${budgetId}/categories`, {
+      method: "DELETE",
+      body: JSON.stringify({ categoryId }),
+    });
+  }
+  budgetCategories(budgetId: string) {
+    return this.collection(
+      `/api/budgets/${budgetId}/categories?page=1&pageSize=100`,
+      assignmentSchema,
+    );
+  }
+  envelopeAllocations(budgetId: string) {
+    return this.request(
+      `/api/budgets/${budgetId}/allocations`,
+      z.array(envelopeAllocationSchema),
+    );
+  }
+  allocateEnvelope(
+    budgetId: string,
+    value: {
+      categoryId: string;
+      amount: string;
+      occurredAt: string;
+      note: string | null;
+    },
+  ) {
+    return this.requestEmpty(`/api/budgets/${budgetId}/allocations`, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  envelopeTransfers(budgetId: string) {
+    return this.request(
+      `/api/budgets/${budgetId}/transfers`,
+      z.array(envelopeTransferSchema),
+    );
+  }
+  transferEnvelope(
+    budgetId: string,
+    value: {
+      fromCategoryId: string | null;
+      toCategoryId: string | null;
+      amount: string;
+      occurredAt: string;
+      note: string | null;
+    },
+  ) {
+    return this.requestEmpty(`/api/budgets/${budgetId}/transfers`, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  devices(signal?: AbortSignal) {
+    return this.collection(
+      "/api/devices?page=1&pageSize=100",
+      deviceSchema,
+      signal,
+    );
+  }
+  updateDevice(id: string, name: string) {
+    return this.requestEmpty(`/api/devices/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+  }
+  deleteDevice(id: string) {
+    return this.requestEmpty(`/api/devices/${id}`, { method: "DELETE" });
+  }
+  updateProfile(value: { name?: string | null; currency?: string }) {
+    return this.requestEmpty("/api/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    });
+  }
+  deleteProfile() {
+    return this.requestEmpty("/api/users/me", { method: "DELETE" });
   }
 
   async registerDevice(name: string, platform: "WEB" | "DESKTOP") {
@@ -106,13 +360,12 @@ export class RestExpenseClient implements ExpenseDataClient {
     );
   }
 
-  private collection<T>(path: string, item: z.ZodType<T>, signal?: AbortSignal) {
-    return this.request(
-      path,
-      z.array(item),
-      signal ? { signal } : {},
-      true,
-    );
+  private collection<T>(
+    path: string,
+    item: z.ZodType<T>,
+    signal?: AbortSignal,
+  ) {
+    return this.request(path, z.array(item), signal ? { signal } : {}, true);
   }
   private async requestEmpty(path: string, init: RequestInit) {
     await this.raw(path, init, true);
@@ -163,7 +416,11 @@ export class RestAuthenticationTransport implements AuthenticationTransport {
     if (this.mode === "bff")
       return this.auth("refresh", refreshToken ? { refreshToken } : {});
     if (!refreshToken)
-      throw new ApiError(401, "No refresh credential is available", "UNAUTHORIZED");
+      throw new ApiError(
+        401,
+        "No refresh credential is available",
+        "UNAUTHORIZED",
+      );
     const response = await rawFetch(
       this.baseUrl,
       "/api/auth/refresh",
@@ -185,17 +442,21 @@ export class RestAuthenticationTransport implements AuthenticationTransport {
       : null;
     if (!refreshed.success || !user)
       throw new ResponseValidationError("/api/auth/refresh", [
-        !user ? "Authenticated user is unavailable" : "Token response is invalid",
+        !user
+          ? "Authenticated user is unavailable"
+          : "Token response is invalid",
       ]);
     return { user, tokens: refreshed.data.data.tokens };
   }
   async logout(accessToken: string | null, refreshToken: string | null) {
-    const path =
-      this.mode === "bff" ? "/session/logout" : "/api/auth/logout";
+    const path = this.mode === "bff" ? "/session/logout" : "/api/auth/logout";
     const response = await rawFetch(
       this.baseUrl,
       path,
-      { method: "POST", body: JSON.stringify(refreshToken ? { refreshToken } : {}) },
+      {
+        method: "POST",
+        body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      },
       accessToken,
     );
     if (!response.ok && response.status !== 401) throw await apiError(response);
@@ -255,7 +516,10 @@ async function parseEnvelope<T>(
 }
 
 async function apiError(response: Response) {
-  const payload = await response.clone().json().catch(() => ({}));
+  const payload = await response
+    .clone()
+    .json()
+    .catch(() => ({}));
   const parsed = z
     .object({
       error: z

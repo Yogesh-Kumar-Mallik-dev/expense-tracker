@@ -99,6 +99,14 @@ before(() => {
       disconnect() {}
     },
   });
+  Object.defineProperty(globalThis, "requestAnimationFrame", {
+    configurable: true,
+    value: (callback: FrameRequestCallback) => setTimeout(callback, 0),
+  });
+  Object.defineProperty(globalThis, "cancelAnimationFrame", {
+    configurable: true,
+    value: (id: number) => clearTimeout(id),
+  });
 });
 beforeEach(() => {
   document.body.innerHTML = "";
@@ -290,4 +298,40 @@ test("synchronization screen never fabricates online or synced state", async () 
   );
   assert.equal(screen.queryByText("Synced"), null);
   assert.equal(screen.queryByText("Connected"), null);
+});
+
+test("first account form validates and submits the account contract once", async () => {
+  const { render, screen } = await import("@testing-library/react");
+  const user = (await import("@testing-library/user-event")).default.setup();
+  const { AccountForm } =
+    await import("../../packages/ui-web/ui-src/src/screens/account-form");
+  const created: unknown[] = [];
+  const api = {
+    createAccount: async (value: unknown) => {
+      created.push(value);
+      return { data: ACCOUNT };
+    },
+  } as unknown as ExpenseDataClient;
+  render(
+    <AccountForm
+      account={null}
+      open
+      api={api}
+      defaultCurrency="INR"
+      onOpenChange={() => {}}
+      onSaved={async () => {}}
+    />,
+  );
+  await user.type(screen.getByLabelText("Name"), "Everyday account");
+  await user.clear(screen.getByLabelText("Opening balance"));
+  await user.type(screen.getByLabelText("Opening balance"), "10.1250");
+  await user.click(screen.getByRole("button", { name: "Create account" }));
+  assert.deepEqual(created, [
+    {
+      name: "Everyday account",
+      type: "CHECKING",
+      currency: "INR",
+      openingBalance: "10.1250",
+    },
+  ]);
 });

@@ -17,9 +17,11 @@ connected.
 | Local SQLite | Package implemented | Not connected | Not connected | Not connected |
 | PowerSync | Upload/download infrastructure | Not connected | Plugin only | Not connected |
 | Offline restart | Infrastructure only | Not delivered | Not delivered | Not delivered |
-| Attachments | API implemented | Not delivered | Not delivered | Not delivered |
-| Budget limits | API/service implemented | Read-only | Read-only | Planned |
-| Envelope mode | Sync surfaces implemented; recovery integration pending | Read-only | Read-only | Planned |
+| Attachments | API implemented | Upload/download/delete | Upload/download/delete | Planned |
+| Budget limits | API/service implemented | CRUD and category assignment | CRUD and category assignment | Planned |
+| Envelope mode | Sync surfaces implemented; recovery integration pending | Allocation and transfers | Allocation and transfers | Planned |
+| Accounts/categories/tags | Implemented | CRUD/archive workflows | CRUD/archive workflows | Planned |
+| Profile/devices | Implemented | Edit/list/remove | Edit/list/remove | Planned |
 
 ---
 
