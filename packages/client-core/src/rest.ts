@@ -7,6 +7,9 @@ import type {
 import {
   accountSchema,
   attachmentSchema,
+  backupSchema,
+  restoreDatasetSchema,
+  transactionScheduleSchema,
   deviceSchema,
   assignmentSchema,
   envelopeAllocationSchema,
@@ -14,6 +17,9 @@ import {
   balanceSchema,
   budgetSchema,
   budgetUsageSchema,
+  periodSpendingSchema,
+  categorySpendingSchema,
+  netWorthPointSchema,
   categorySchema,
   pageMetaSchema,
   sessionSchema,
@@ -131,6 +137,7 @@ export class RestExpenseClient implements ExpenseDataClient {
       query.set("from", new Date(`${filters.from}T00:00:00`).toISOString());
     if (filters.to)
       query.set("to", new Date(`${filters.to}T23:59:59.999`).toISOString());
+    if (filters.search) query.set("search", filters.search);
     return this.collection(
       `/api/transactions?${query}`,
       transactionSchema,
@@ -251,6 +258,24 @@ export class RestExpenseClient implements ExpenseDataClient {
       signal ? { signal } : {},
     );
   }
+  periodSpending(from: string, to: string) {
+    return this.request(
+      `/api/reporting/period-spending?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      z.array(periodSpendingSchema),
+    );
+  }
+  categorySpending(from: string, to: string) {
+    return this.request(
+      `/api/reporting/category-spending?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      z.array(categorySpendingSchema),
+    );
+  }
+  netWorthHistory(from: string, to: string) {
+    return this.request(
+      `/api/reporting/net-worth-history?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      z.array(netWorthPointSchema),
+    );
+  }
   createBudget(value: BudgetInput) {
     return this.request("/api/budgets", budgetSchema, {
       method: "POST",
@@ -355,7 +380,11 @@ export class RestExpenseClient implements ExpenseDataClient {
   deleteDevice(id: string) {
     return this.requestEmpty(`/api/devices/${id}`, { method: "DELETE" });
   }
-  updateProfile(value: { name?: string | null; currency?: string }) {
+  updateProfile(value: {
+    name?: string | null;
+    currency?: string;
+    timezone?: string;
+  }) {
     return this.requestEmpty("/api/users/me", {
       method: "PATCH",
       body: JSON.stringify(value),
@@ -373,6 +402,69 @@ export class RestExpenseClient implements ExpenseDataClient {
       }),
       { method: "POST", body: JSON.stringify({ email }) },
     );
+  }
+  exportBackup() {
+    return this.request("/api/users/me/backup", backupSchema);
+  }
+  stageRestore(name: string, backup: unknown) {
+    return this.request(
+      "/api/users/me/restore-datasets",
+      restoreDatasetSchema,
+      {
+        method: "POST",
+        body: JSON.stringify({ name, backup }),
+      },
+    );
+  }
+  restoreDatasets() {
+    return this.request(
+      "/api/users/me/restore-datasets",
+      z.array(restoreDatasetSchema),
+    );
+  }
+  reconcileAccount(
+    accountId: string,
+    value: {
+      statementDate: string;
+      statementBalance: string;
+      clearedTransactionIds: string[];
+    },
+  ) {
+    return this.request(`/api/accounts/${accountId}/reconcile`, z.unknown(), {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  schedules(through?: string) {
+    return this.request(
+      `/api/schedules${through ? `?through=${encodeURIComponent(through)}` : ""}`,
+      z.array(transactionScheduleSchema),
+    );
+  }
+  createSchedule(value: {
+    accountId: string;
+    transferAccountId: string | null;
+    categoryId: string | null;
+    type: "EXPENSE" | "INCOME" | "TRANSFER";
+    amount: string;
+    currency: string;
+    description: string | null;
+    note: string | null;
+    frequency: "WEEKLY" | "MONTHLY" | "YEARLY";
+    interval: number;
+    startsOn: string;
+    endsOn: string | null;
+  }) {
+    return this.request("/api/schedules", transactionScheduleSchema, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
+  }
+  resolveScheduleOccurrence(id: string, action: "POSTED" | "SKIPPED") {
+    return this.request(`/api/schedules/occurrences/${id}`, z.unknown(), {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    });
   }
 
   async registerDevice(name: string, platform: "WEB" | "DESKTOP") {

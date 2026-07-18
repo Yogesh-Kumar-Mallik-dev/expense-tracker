@@ -15,6 +15,7 @@ export const userSchema = z.object({
   email: z.string().email(),
   name: nullableString,
   currency: z.string().length(3),
+  timezone: z.string().default("UTC"),
 });
 export const accountSchema = z.object({
   id: z.string().uuid(),
@@ -61,6 +62,7 @@ export const transactionSchema = z.object({
   currency: z.string().length(3),
   description: nullableString,
   note: nullableString,
+  importFingerprint: nullableString.optional(),
   occurredAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -95,6 +97,24 @@ export const budgetUsageSchema = z.object({
   assigned: z.string(),
   available: z.string(),
   excludedTransactionIds: z.array(z.string().uuid()),
+});
+export const periodSpendingSchema = z.object({
+  currency: z.string().length(3),
+  income: z.string(),
+  expenses: z.string(),
+  net: z.string(),
+  transactionCount: z.number().int().nonnegative(),
+});
+export const categorySpendingSchema = z.object({
+  categoryId: nullableString,
+  currency: z.string().length(3),
+  amount: z.string(),
+  transactionCount: z.number().int().nonnegative(),
+});
+export const netWorthPointSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  currency: z.string().length(3),
+  balance: z.string(),
 });
 export const tagSchema = z.object({
   id: z.string().uuid(),
@@ -169,6 +189,48 @@ export const sessionSchema = z.object({
   user: userSchema,
   tokens: tokenSetSchema,
 });
+export const backupSchema = z.object({
+  format: z.literal("expense-tracker-backup"),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
+  exportedAt: z.string().datetime(),
+  user: userSchema.extend({
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  }),
+  records: z.record(z.string(), z.array(z.unknown())),
+  omissions: z.array(z.string()),
+});
+export const restoreDatasetSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  schemaVersion: z.number().int().positive().optional(),
+  status: z.enum(["READY", "ACTIVATED", "DISCARDED"]),
+  createdAt: z.string(),
+});
+export const scheduleOccurrenceSchema = z.object({
+  id: z.string().uuid(),
+  occurrenceDate: z.string(),
+  status: z.enum(["DUE", "POSTED", "SKIPPED"]),
+  transactionId: z.string().uuid().nullable(),
+});
+export const transactionScheduleSchema = z.object({
+  id: z.string().uuid(),
+  accountId: z.string().uuid(),
+  transferAccountId: z.string().uuid().nullable(),
+  categoryId: z.string().uuid().nullable(),
+  type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]),
+  amount: z.string(),
+  currency: z.string().length(3),
+  description: z.string().nullable(),
+  note: z.string().nullable(),
+  frequency: z.enum(["WEEKLY", "MONTHLY", "YEARLY"]),
+  interval: z.number().int().positive(),
+  startsOn: z.string(),
+  nextOccurrenceOn: z.string(),
+  endsOn: z.string().nullable(),
+  isActive: z.boolean(),
+  occurrences: z.array(scheduleOccurrenceSchema).optional(),
+});
 
 export type Account = z.infer<typeof accountSchema>;
 export type Category = z.infer<typeof categorySchema>;
@@ -176,6 +238,9 @@ export type Transaction = z.infer<typeof transactionSchema>;
 export type Budget = z.infer<typeof budgetSchema>;
 export type AccountBalance = z.infer<typeof balanceSchema>;
 export type BudgetUsage = z.infer<typeof budgetUsageSchema>;
+export type PeriodSpending = z.infer<typeof periodSpendingSchema>;
+export type CategorySpending = z.infer<typeof categorySpendingSchema>;
+export type NetWorthPoint = z.infer<typeof netWorthPointSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type Device = z.infer<typeof deviceSchema>;
 export type BudgetCategory = z.infer<typeof assignmentSchema>;
@@ -184,6 +249,9 @@ export type Attachment = z.infer<typeof attachmentSchema>;
 export type EnvelopeAllocation = z.infer<typeof envelopeAllocationSchema>;
 export type EnvelopeTransfer = z.infer<typeof envelopeTransferSchema>;
 export type Session = z.infer<typeof sessionSchema>;
+export type Backup = z.infer<typeof backupSchema>;
+export type RestoreDataset = z.infer<typeof restoreDatasetSchema>;
+export type TransactionSchedule = z.infer<typeof transactionScheduleSchema>;
 export type User = z.infer<typeof userSchema>;
 export type PageMeta = z.infer<typeof pageMetaSchema>;
 
@@ -200,6 +268,7 @@ export interface TransactionFilters {
   categoryId?: string;
   from?: string;
   to?: string;
+  search?: string;
 }
 export interface TransactionInput {
   accountId: string;
@@ -210,6 +279,7 @@ export interface TransactionInput {
   currency: string;
   description: string | null;
   note: string | null;
+  importFingerprint?: string | null;
   occurredAt: string;
 }
 export interface AccountInput {

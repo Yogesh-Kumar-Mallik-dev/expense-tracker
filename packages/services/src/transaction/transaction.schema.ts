@@ -18,6 +18,11 @@ const transactionFields = z.object({
     .transform((v) => v.toUpperCase()),
   description: z.string().trim().max(240).nullable().default(null),
   note: z.string().trim().max(2000).nullable().default(null),
+  importFingerprint: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .nullable()
+    .default(null),
   occurredAt: z.iso.datetime(),
 });
 
@@ -59,7 +64,7 @@ const validateTransfer = (
 export const createTransactionSchema =
   transactionFields.superRefine(validateTransfer);
 export const updateTransactionSchema = transactionFields
-  .omit({ userId: true })
+  .omit({ userId: true, importFingerprint: true })
   .partial()
   .required({ accountId: true, transferAccountId: true, type: true })
   .superRefine(validateTransfer);

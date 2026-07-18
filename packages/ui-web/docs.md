@@ -33,7 +33,8 @@ Current route screens are:
 - Categories and tags: create/edit and archive/delete workflows.
 - Budgets: create/edit/delete, category assignment, spending-limit usage,
   envelope allocation, and envelope transfers.
-- Reports: an honest unavailable state pending reporting endpoints.
+- Reports: period income/expense/net totals, category spending, and register
+  drill-down over explicit date boundaries.
 - Synchronization: live connection, transfer, last-sync, attachment-queue, and
   failure state from the platform runtime.
 - Settings: profile defaults, registered devices, diagnostics, and sign-out.
@@ -49,6 +50,12 @@ validated session envelope as login and opens the application immediately.
 - Budget-mode conversion accepts confirmed values, checks the source version,
   copies assignments, and commits in one authoritative transaction.
 - Attachment bytes and retry metadata survive restart in local-only storage.
+- Transaction CSV import validates every row before confirmation and reports
+  partial failures; export traverses every matching page.
+- Imports persist a per-user SHA-256 fingerprint so retries and cross-device
+  imports skip exact active duplicates.
+- Settings exports a versioned server snapshot while explicitly excluding
+  credentials, devices, local queues, and attachment bytes.
 - Email changes use a time-limited verification token. Production delivery
   requires `RESEND_API_KEY`, `EMAIL_FROM`, and `WEB_APP_URL`.
 

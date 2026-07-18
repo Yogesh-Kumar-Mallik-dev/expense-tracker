@@ -35,12 +35,349 @@ import type {
   Category,
   Device,
   ExpenseDataClient,
+  PeriodSpending,
+  CategorySpending,
+  NetWorthPoint,
   Session,
+  TransactionSchedule,
+  Transaction,
 } from "../api";
 import { formatMoney, moneyRatio, parseMoney } from "../money";
 import type { AppRoute } from "../shell";
 import { AccountForm } from "./account-form";
 import { BudgetForm } from "./budget-form";
+import { SelectField } from "./select-field";
+
+export function SchedulesScreen({ api }: { api: ExpenseDataClient }) {
+  const today = new Date();
+  const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [schedules, setSchedules] = useState<TransactionSchedule[]>([]);
+  const [accountId, setAccountId] = useState("");
+  const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [frequency, setFrequency] = useState<"WEEKLY" | "MONTHLY" | "YEARLY">(
+    "MONTHLY",
+  );
+  const [startsOn, setStartsOn] = useState(localDate);
+  const [message, setMessage] = useState("");
+  const load = useCallback(async () => {
+    const [accountResult, scheduleResult] = await Promise.all([
+      api.accounts(),
+      api.schedules(localDate),
+    ]);
+    setAccounts(accountResult.data);
+    setSchedules(scheduleResult.data);
+    if (!accountId && accountResult.data[0])
+      setAccountId(accountResult.data[0].id);
+  }, [accountId, api, localDate]);
+  useEffect(
+    () => void load().catch((error) => setMessage(String(error))),
+    [load],
+  );
+  const account = accounts.find((value) => value.id === accountId);
+  const save = async () => {
+    if (!account || !/^\d+(?:\.\d{1,4})?$/.test(amount) || Number(amount) <= 0)
+      return setMessage("Choose an account and enter a positive amount.");
+    await api.createSchedule({
+      accountId,
+      transferAccountId: null,
+      categoryId: null,
+      type,
+      amount,
+      currency: account.currency,
+      description: description.trim() || null,
+      note: null,
+      frequency,
+      interval: 1,
+      startsOn,
+      endsOn: null,
+    });
+    setAmount("");
+    setDescription("");
+    setMessage("Schedule created for manual approval.");
+    await load();
+  };
+  return (
+    <section className="route-screen" aria-labelledby="schedules-title">
+      <header className="route-header">
+        <div>
+          <p className="eyebrow">Review before posting</p>
+          <h1 id="schedules-title">Schedules</h1>
+          <p>Due occurrences do not affect balances until you post them.</p>
+        </div>
+      </header>
+      <div className="form-stack">
+        <SelectField
+          label="Account"
+          required
+          value={accountId}
+          onChange={setAccountId}
+          options={accounts.map((value) => ({
+            value: value.id,
+            label: value.name,
+          }))}
+        />
+        <SelectField
+          label="Type"
+          required
+          value={type}
+          onChange={(value) => setType(value as "EXPENSE" | "INCOME")}
+          options={[
+            { value: "EXPENSE", label: "Expense" },
+            { value: "INCOME", label: "Income" },
+          ]}
+        />
+        <div className="field">
+          <Label htmlFor="schedule-amount">Amount</Label>
+          <Input
+            id="schedule-amount"
+            inputMode="decimal"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        </div>
+        <div className="field">
+          <Label htmlFor="schedule-description">Description</Label>
+          <Input
+            id="schedule-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </div>
+        <SelectField
+          label="Frequency"
+          required
+          value={frequency}
+          onChange={(value) => setFrequency(value as typeof frequency)}
+          options={[
+            { value: "WEEKLY", label: "Weekly" },
+            { value: "MONTHLY", label: "Monthly" },
+            { value: "YEARLY", label: "Yearly" },
+          ]}
+        />
+        <div className="field">
+          <Label htmlFor="schedule-start">First date</Label>
+          <Input
+            id="schedule-start"
+            type="date"
+            value={startsOn}
+            onChange={(event) => setStartsOn(event.target.value)}
+          />
+        </div>
+        <Button
+          type="button"
+          onClick={() =>
+            void save().catch((error) => setMessage(String(error)))
+          }
+        >
+          Create schedule
+        </Button>
+        {message ? <p role="status">{message}</p> : null}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Description</TableHead>
+            <TableHead>Next date</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Due action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {schedules.map((schedule) => (
+            <TableRow key={schedule.id}>
+              <TableCell>
+                {schedule.description ?? "Scheduled transaction"}
+              </TableCell>
+              <TableCell>{schedule.nextOccurrenceOn.slice(0, 10)}</TableCell>
+              <TableCell className="money">
+                {formatMoney(schedule.amount, schedule.currency)}
+              </TableCell>
+              <TableCell>
+                {schedule.occurrences?.map((occurrence) => (
+                  <span key={occurrence.id}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        void api
+                          .resolveScheduleOccurrence(occurrence.id, "POSTED")
+                          .then(load)
+                      }
+                    >
+                      Post {occurrence.occurrenceDate.slice(0, 10)}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() =>
+                        void api
+                          .resolveScheduleOccurrence(occurrence.id, "SKIPPED")
+                          .then(load)
+                      }
+                    >
+                      Skip
+                    </Button>
+                  </span>
+                ))}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </section>
+  );
+}
+
+export function ReconciliationScreen({ api }: { api: ExpenseDataClient }) {
+  const today = new Date();
+  const financialDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountId, setAccountId] = useState("");
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [statementDate, setStatementDate] = useState(financialDate);
+  const [statementBalance, setStatementBalance] = useState("");
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    void api.accounts().then(({ data }) => {
+      setAccounts(data);
+      if (data[0]) setAccountId(data[0].id);
+    });
+  }, [api]);
+  useEffect(() => {
+    if (!accountId) return;
+    void (async () => {
+      const rows: Transaction[] = [];
+      for (let page = 1; ; page += 1) {
+        const result = await api.transactions({
+          page,
+          pageSize: 100,
+          accountId,
+          to: new Date(`${statementDate}T23:59:59.999`).toISOString(),
+        });
+        rows.push(...result.data);
+        if (!result.meta?.hasNext) break;
+      }
+      setTransactions(rows);
+      setSelected(new Set());
+    })().catch((error) => setMessage(String(error)));
+  }, [accountId, api, statementDate]);
+  const account = accounts.find((value) => value.id === accountId);
+  return (
+    <section className="route-screen" aria-labelledby="reconciliation-title">
+      <header className="route-header">
+        <div>
+          <p className="eyebrow">Match a bank statement</p>
+          <h1 id="reconciliation-title">Reconciliation</h1>
+          <p>
+            Select only transactions confirmed on the statement. Transfers are
+            reconciled independently for each account.
+          </p>
+        </div>
+      </header>
+      <div className="filter-bar">
+        <SelectField
+          label="Account"
+          required
+          value={accountId}
+          onChange={setAccountId}
+          options={accounts.map((value) => ({
+            value: value.id,
+            label: value.name,
+          }))}
+        />
+        <div className="field">
+          <Label htmlFor="statement-date">Statement date</Label>
+          <Input
+            id="statement-date"
+            type="date"
+            value={statementDate}
+            onChange={(event) => setStatementDate(event.target.value)}
+          />
+        </div>
+        <div className="field">
+          <Label htmlFor="statement-balance">
+            Statement balance {account ? `(${account.currency})` : ""}
+          </Label>
+          <Input
+            id="statement-balance"
+            inputMode="decimal"
+            value={statementBalance}
+            onChange={(event) => setStatementBalance(event.target.value)}
+          />
+        </div>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cleared</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell>
+                <input
+                  type="checkbox"
+                  aria-label={`Clear ${transaction.description ?? transaction.id}`}
+                  checked={selected.has(transaction.id)}
+                  onChange={(event) =>
+                    setSelected((current) => {
+                      const next = new Set(current);
+                      if (event.target.checked) next.add(transaction.id);
+                      else next.delete(transaction.id);
+                      return next;
+                    })
+                  }
+                />
+              </TableCell>
+              <TableCell>{transaction.occurredAt.slice(0, 10)}</TableCell>
+              <TableCell>
+                {transaction.description ?? "No description"}
+              </TableCell>
+              <TableCell className="money">
+                {formatMoney(transaction.amount, transaction.currency)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Button
+        type="button"
+        disabled={!accountId || !statementBalance || selected.size === 0}
+        onClick={() =>
+          void api
+            .reconcileAccount(accountId, {
+              statementDate,
+              statementBalance,
+              clearedTransactionIds: [...selected],
+            })
+            .then(() =>
+              setMessage(
+                "Statement reconciled and selected transactions locked.",
+              ),
+            )
+            .catch((error) =>
+              setMessage(
+                error instanceof Error
+                  ? error.message
+                  : "Reconciliation failed.",
+              ),
+            )
+        }
+      >
+        Finish reconciliation
+      </Button>
+      {message ? <p role="status">{message}</p> : null}
+    </section>
+  );
+}
 import { BudgetManage } from "./budget-manage";
 
 export function OverviewScreen({
@@ -90,13 +427,6 @@ export function OverviewScreen({
           <ArrowRight />
         </button>
       </div>
-      <Alert>
-        <AlertTitle>Monthly spending is not shown</AlertTitle>
-        <AlertDescription>
-          TODO: Requires a reporting-service endpoint for period spending. A
-          paginated transaction page is not a valid aggregate.
-        </AlertDescription>
-      </Alert>
     </section>
   );
 }
@@ -503,13 +833,262 @@ export function BudgetsScreen({
   );
 }
 
-export function ReportsScreen() {
+export function ReportsScreen({ api }: { api: ExpenseDataClient }) {
+  const today = new Date();
+  const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+  const localDate = (value: Date) =>
+    `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  const [from, setFrom] = useState(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`,
+  );
+  const [to, setTo] = useState(localDate(today));
+  const [compareFrom, setCompareFrom] = useState(localDate(previousMonth));
+  const [compareTo, setCompareTo] = useState(localDate(previousMonthEnd));
+  const [periods, setPeriods] = useState<PeriodSpending[]>([]);
+  const [comparison, setComparison] = useState<PeriodSpending[]>([]);
+  const [categoryRows, setCategoryRows] = useState<CategorySpending[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [netWorth, setNetWorth] = useState<NetWorthPoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const start = new Date(`${from}T00:00:00`).toISOString();
+      const end = new Date(`${to}T23:59:59.999`).toISOString();
+      const comparisonStart = new Date(`${compareFrom}T00:00:00`).toISOString();
+      const comparisonEnd = new Date(`${compareTo}T23:59:59.999`).toISOString();
+      const [period, previous, category, reference, history] =
+        await Promise.all([
+          api.periodSpending(start, end),
+          api.periodSpending(comparisonStart, comparisonEnd),
+          api.categorySpending(start, end),
+          api.categories(),
+          api.netWorthHistory(from, to),
+        ]);
+      setPeriods(period.data);
+      setComparison(previous.data);
+      setCategoryRows(category.data);
+      setCategories(reference.data);
+      setNetWorth(history.data);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Reports could not be loaded.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [api, compareFrom, compareTo, from, to]);
+  useEffect(() => void load(), [load]);
   return (
-    <UnavailableScreen
-      eyebrow="Reporting dependency"
-      title="Reports"
-      description="Reports are unavailable until reporting endpoints expose period totals, category grouping, comparisons, and drill-down transaction identifiers. Account balances and budget usage remain available on their own screens."
-    />
+    <section className="route-screen" aria-labelledby="reports-title">
+      <header className="route-header">
+        <div>
+          <p className="eyebrow">Computed from source records</p>
+          <h1 id="reports-title">Reports</h1>
+          <p>Review income and spending for an explicit period.</p>
+        </div>
+      </header>
+      <div className="filter-bar">
+        <Label htmlFor="report-from">From</Label>
+        <Input
+          id="report-from"
+          type="date"
+          value={from}
+          onChange={(event) => setFrom(event.target.value)}
+        />
+        <Label htmlFor="report-to">To</Label>
+        <Input
+          id="report-to"
+          type="date"
+          value={to}
+          onChange={(event) => setTo(event.target.value)}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={loading}
+          onClick={() => void load()}
+        >
+          {loading ? "Loading…" : "Refresh"}
+        </Button>
+      </div>
+      <details className="filters">
+        <summary>Comparison period</summary>
+        <div className="filter-grid">
+          <div className="field">
+            <Label htmlFor="comparison-from">From</Label>
+            <Input
+              id="comparison-from"
+              type="date"
+              value={compareFrom}
+              onChange={(event) => setCompareFrom(event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <Label htmlFor="comparison-to">To</Label>
+            <Input
+              id="comparison-to"
+              type="date"
+              value={compareTo}
+              onChange={(event) => setCompareTo(event.target.value)}
+            />
+          </div>
+        </div>
+      </details>
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Reports unavailable</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      {!loading && !error && periods.length === 0 ? (
+        <Alert>
+          <AlertTitle>No reportable transactions</AlertTitle>
+          <AlertDescription>
+            No income or expenses exist in this period. Transfers are excluded.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {periods.length ? (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Currency</TableHead>
+              <TableHead>Income</TableHead>
+              <TableHead>Expenses</TableHead>
+              <TableHead>Net</TableHead>
+              <TableHead>Transactions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {periods.map((row) => (
+              <TableRow key={row.currency}>
+                <TableCell>{row.currency}</TableCell>
+                <TableCell className="money">
+                  {formatMoney(row.income, row.currency)}
+                </TableCell>
+                <TableCell className="money">
+                  {formatMoney(row.expenses, row.currency)}
+                </TableCell>
+                <TableCell className="money">
+                  {formatMoney(row.net, row.currency)}
+                </TableCell>
+                <TableCell>{row.transactionCount}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : null}
+      {comparison.length ? (
+        <>
+          <h2>Comparison period</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Currency</TableHead>
+                <TableHead>Income</TableHead>
+                <TableHead>Expenses</TableHead>
+                <TableHead>Net</TableHead>
+                <TableHead>Transactions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {comparison.map((row) => (
+                <TableRow key={row.currency}>
+                  <TableCell>{row.currency}</TableCell>
+                  <TableCell className="money">
+                    {formatMoney(row.income, row.currency)}
+                  </TableCell>
+                  <TableCell className="money">
+                    {formatMoney(row.expenses, row.currency)}
+                  </TableCell>
+                  <TableCell className="money">
+                    {formatMoney(row.net, row.currency)}
+                  </TableCell>
+                  <TableCell>{row.transactionCount}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
+      ) : null}
+      {netWorth.length ? (
+        <details>
+          <summary>Net-worth history</summary>
+          <p>
+            Balances are kept separate by currency and are calculated from
+            opening balances and posted transactions through each date.
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead>Balance</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {netWorth.map((row) => (
+                <TableRow key={`${row.date}:${row.currency}`}>
+                  <TableCell>{row.date}</TableCell>
+                  <TableCell>{row.currency}</TableCell>
+                  <TableCell className="money">
+                    {formatMoney(row.balance, row.currency)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </details>
+      ) : null}
+      {categoryRows.length ? (
+        <>
+          <h2>Expenses by category</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead>Spent</TableHead>
+                <TableHead>Transactions</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categoryRows.map((row) => (
+                <TableRow key={`${row.categoryId}:${row.currency}`}>
+                  <TableCell>
+                    {categories.find((value) => value.id === row.categoryId)
+                      ?.name ?? "Uncategorized"}
+                  </TableCell>
+                  <TableCell>{row.currency}</TableCell>
+                  <TableCell className="money">
+                    {formatMoney(row.amount, row.currency)}
+                  </TableCell>
+                  <TableCell>{row.transactionCount}</TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        window.location.hash = `/transactions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${row.categoryId ? `&categoryId=${encodeURIComponent(row.categoryId)}` : ""}`;
+                      }}
+                    >
+                      View register
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
+      ) : null}
+    </section>
   );
 }
 export function SyncScreen({ sync }: { sync: SyncController }) {
@@ -592,6 +1171,7 @@ export function SettingsScreen({
 }) {
   const [name, setName] = useState(session.user.name ?? "");
   const [currency, setCurrency] = useState(session.user.currency);
+  const [timezone, setTimezone] = useState(session.user.timezone);
   const [email, setEmail] = useState(session.user.email);
   const [devices, setDevices] = useState<Device[]>([]);
   const [pending, setPending] = useState(false);
@@ -606,12 +1186,18 @@ export function SettingsScreen({
   const saveProfile = async () => {
     if (!/^[A-Za-z]{3}$/.test(currency))
       return setMessage("Currency must be a three-letter code.");
+    try {
+      new Intl.DateTimeFormat("en", { timeZone: timezone });
+    } catch {
+      return setMessage("Enter a valid IANA timezone, such as Asia/Kolkata.");
+    }
     setPending(true);
     setMessage("");
     try {
       await api.updateProfile({
         name: name.trim() || null,
         currency: currency.toUpperCase(),
+        timezone,
       });
       setMessage(
         "Profile saved. Updated defaults apply after session refresh.",
@@ -679,6 +1265,10 @@ export function SettingsScreen({
           <dt>Default currency</dt>
           <dd>{session.user.currency}</dd>
         </div>
+        <div>
+          <dt>Financial timezone</dt>
+          <dd>{session.user.timezone}</dd>
+        </div>
       </dl>
       <section className="settings-action" aria-labelledby="profile-edit-title">
         <div>
@@ -697,6 +1287,18 @@ export function SettingsScreen({
               onChange={(event) => setName(event.target.value)}
               maxLength={120}
             />
+          </div>
+          <div className="field">
+            <Label htmlFor="profile-timezone">Financial timezone</Label>
+            <Input
+              id="profile-timezone"
+              value={timezone}
+              onChange={(event) => setTimezone(event.target.value)}
+              placeholder="Asia/Kolkata"
+            />
+            <small>
+              Scheduled financial dates are posted using this IANA timezone.
+            </small>
           </div>
           <div className="field">
             <Label htmlFor="profile-email">Email</Label>
@@ -780,6 +1382,89 @@ export function SettingsScreen({
           credentials remain in memory.
         </AlertDescription>
       </Alert>
+      <div className="settings-action">
+        <div>
+          <strong>Financial data backup</strong>
+          <p>
+            Export a versioned snapshot of server financial records. Attachment
+            bytes and authentication credentials are not included.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            setPending(true);
+            void api
+              .exportBackup()
+              .then((backup) => {
+                const url = URL.createObjectURL(
+                  new Blob([JSON.stringify(backup.data, null, 2)], {
+                    type: "application/json",
+                  }),
+                );
+                const anchor = document.createElement("a");
+                anchor.href = url;
+                anchor.download = `expense-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                anchor.click();
+                URL.revokeObjectURL(url);
+                setMessage("Backup exported.");
+              })
+              .catch((caught) =>
+                setMessage(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Backup could not be exported.",
+                ),
+              )
+              .finally(() => setPending(false));
+          }}
+        >
+          Export backup
+        </Button>
+        <div className="field">
+          <Label htmlFor="restore-backup">
+            Restore into a separate dataset
+          </Label>
+          <Input
+            id="restore-backup"
+            type="file"
+            accept="application/json,.json"
+            disabled={pending}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              setPending(true);
+              void file
+                .text()
+                .then((text) =>
+                  api.stageRestore(
+                    file.name.replace(/\.json$/i, ""),
+                    JSON.parse(text),
+                  ),
+                )
+                .then((result) =>
+                  setMessage(
+                    `Backup validated as “${result.data.name}”. The active synchronized data was not overwritten.`,
+                  ),
+                )
+                .catch((caught) =>
+                  setMessage(
+                    caught instanceof Error
+                      ? caught.message
+                      : "Backup could not be validated.",
+                  ),
+                )
+                .finally(() => setPending(false));
+            }}
+          />
+          <small>
+            Restores are staged separately so other devices cannot overwrite or
+            resurrect records in the active dataset.
+          </small>
+        </div>
+      </div>
       <div className="settings-action">
         <div>
           <strong>Diagnostic logs</strong>
@@ -870,33 +1555,6 @@ export function SettingsScreen({
   );
 }
 
-function UnavailableScreen({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <section
-      className="route-screen narrow-screen"
-      aria-labelledby={`${title.toLocaleLowerCase()}-title`}
-    >
-      <header className="route-header">
-        <div>
-          <p className="eyebrow">{eyebrow}</p>
-          <h1 id={`${title.toLocaleLowerCase()}-title`}>{title}</h1>
-        </div>
-      </header>
-      <Alert>
-        <AlertTitle>Not available yet</AlertTitle>
-        <AlertDescription>{description}</AlertDescription>
-      </Alert>
-    </section>
-  );
-}
 function ListSkeleton() {
   return (
     <div className="register-skeleton" aria-label="Loading">

@@ -1,0 +1,110 @@
+enum ScheduleFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ScheduleOccurrenceStatus {
+  DUE
+  POSTED
+  SKIPPED
+}
+
+enum ReconciliationStatus {
+  PENDING
+  CLEARED
+  RECONCILED
+}
+
+enum RestoreDatasetStatus {
+  READY
+  ACTIVATED
+  DISCARDED
+}
+
+model TransactionSchedule {
+  id                String            @id @default(uuid()) @db.Uuid
+  userId            String            @db.Uuid
+  accountId         String            @db.Uuid
+  transferAccountId String?           @db.Uuid
+  categoryId        String?           @db.Uuid
+  type              TransactionType
+  amount            Decimal           @db.Decimal(19, 4)
+  currency          String            @db.VarChar(3)
+  description       String?
+  note              String?
+  frequency         ScheduleFrequency
+  interval          Int               @default(1)
+  startsOn          DateTime          @db.Date
+  nextOccurrenceOn  DateTime          @db.Date
+  endsOn            DateTime?         @db.Date
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?         @db.Timestamptz(3)
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  account     Account              @relation("ScheduleAccount", fields: [accountId], references: [id], onDelete: Restrict)
+  occurrences ScheduleOccurrence[]
+
+  @@index([userId, nextOccurrenceOn])
+}
+
+model ScheduleOccurrence {
+  id             String                   @id @default(uuid()) @db.Uuid
+  scheduleId     String                   @db.Uuid
+  occurrenceDate DateTime                 @db.Date
+  status         ScheduleOccurrenceStatus @default(DUE)
+  transactionId  String?                  @db.Uuid
+  createdAt      DateTime                 @default(now()) @db.Timestamptz(3)
+  resolvedAt     DateTime?                @db.Timestamptz(3)
+
+  schedule    TransactionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  transaction Transaction?        @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@unique([scheduleId, occurrenceDate])
+  @@index([status, occurrenceDate])
+}
+
+model AccountTransactionState {
+  id            String               @id @default(uuid()) @db.Uuid
+  accountId     String               @db.Uuid
+  transactionId String               @db.Uuid
+  status        ReconciliationStatus @default(PENDING)
+  statementDate DateTime?            @db.Date
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+
+  account     Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, transactionId])
+  @@index([accountId, status])
+}
+
+model Reconciliation {
+  id                String   @id @default(uuid()) @db.Uuid
+  accountId         String   @db.Uuid
+  statementDate     DateTime @db.Date
+  statementBalance  Decimal  @db.Decimal(19, 4)
+  reconciledBalance Decimal  @db.Decimal(19, 4)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, statementDate])
+}
+
+model RestoreDataset {
+  id            String               @id @default(uuid()) @db.Uuid
+  userId        String               @db.Uuid
+  name          String
+  schemaVersion Int
+  snapshot      Json
+  status        RestoreDatasetStatus @default(READY)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  activatedAt   DateTime?            @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

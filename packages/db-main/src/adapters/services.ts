@@ -40,6 +40,7 @@ import type {
   Tag as PrismaTag,
   Transaction as PrismaTransaction,
   User as PrismaUser,
+  Prisma,
 } from "../generated/prisma/client";
 const iso = (v: Date | null) => v?.toISOString() ?? null;
 const account = (v: PrismaAccount): AccountRecord => ({
@@ -94,6 +95,7 @@ const user = (v: PrismaUser): UserRecord => ({
   email: v.email,
   name: v.name,
   currency: v.currency,
+  timezone: v.timezone,
   createdAt: v.createdAt.toISOString(),
   updatedAt: v.updatedAt.toISOString(),
   deletedAt: iso(v.deletedAt),
@@ -391,15 +393,24 @@ export class MainTransactionAdapter implements TransactionRepositoryPort {
       categoryId?: string;
       from?: string;
       to?: string;
+      search?: string;
       offset: number;
       limit: number;
     },
   ) {
-    const where = {
+    const where: Prisma.TransactionWhereInput = {
       userId: u,
       deletedAt: null,
       ...(f.accountId ? { accountId: f.accountId } : {}),
       ...(f.categoryId ? { categoryId: f.categoryId } : {}),
+      ...(f.search
+        ? {
+            OR: [
+              { description: { contains: f.search, mode: "insensitive" } },
+              { note: { contains: f.search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       ...(f.from || f.to
         ? {
             occurredAt: {

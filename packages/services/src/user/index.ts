@@ -5,6 +5,7 @@ export interface UserRecord {
   email: string;
   name: string | null;
   currency: string;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -15,7 +16,7 @@ export interface CreateUserInput {
   currency?: string;
 }
 export type UpdateUserInput = Partial<
-  Pick<UserRecord, "email" | "name" | "currency">
+  Pick<UserRecord, "email" | "name" | "currency" | "timezone">
 >;
 export interface UserRepositoryPort extends CrudRepositoryPort<
   UserRecord,
@@ -31,6 +32,19 @@ const schema = z.object({
     .length(3)
     .transform((v) => v.toUpperCase())
     .default("USD"),
+  timezone: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine((value) => {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Invalid IANA timezone")
+    .default("UTC"),
 });
 const update = schema.partial().refine((v) => Object.keys(v).length > 0);
 export class UserService extends SingleRowService<
@@ -49,6 +63,7 @@ export class UserService extends SingleRowService<
       email: v.email,
       name: v.name ?? null,
       currency: v.currency,
+      timezone: v.timezone,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,

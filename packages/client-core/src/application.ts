@@ -3,6 +3,9 @@ import type {
   AccountBalance,
   Budget,
   BudgetUsage,
+  PeriodSpending,
+  CategorySpending,
+  NetWorthPoint,
   Category,
   PageMeta,
   RegistrationInput,
@@ -18,6 +21,9 @@ import type {
   Device,
   TransactionTag,
   Attachment,
+  Backup,
+  RestoreDataset,
+  TransactionSchedule,
   BudgetCategory,
   EnvelopeAllocation,
   EnvelopeTransfer,
@@ -82,6 +88,12 @@ export interface ExpenseDataClient {
     to: string,
     signal?: AbortSignal,
   ): Promise<Result<BudgetUsage[]>>;
+  periodSpending(from: string, to: string): Promise<Result<PeriodSpending[]>>;
+  categorySpending(
+    from: string,
+    to: string,
+  ): Promise<Result<CategorySpending[]>>;
+  netWorthHistory(from: string, to: string): Promise<Result<NetWorthPoint[]>>;
   createBudget(value: BudgetInput): Promise<Result<Budget>>;
   updateBudget(id: string, value: Partial<BudgetInput>): Promise<void>;
   deleteBudget(id: string): Promise<void>;
@@ -124,16 +136,45 @@ export interface ExpenseDataClient {
   updateProfile(value: {
     name?: string | null;
     currency?: string;
+    timezone?: string;
   }): Promise<void>;
   deleteProfile(): Promise<void>;
-  requestEmailChange(
-    email: string,
-  ): Promise<
+  requestEmailChange(email: string): Promise<
     Result<{
       delivery: "email" | "development";
       developmentVerificationUrl?: string | undefined;
     }>
   >;
+  exportBackup(): Promise<Result<Backup>>;
+  stageRestore(name: string, backup: unknown): Promise<Result<RestoreDataset>>;
+  restoreDatasets(): Promise<Result<RestoreDataset[]>>;
+  reconcileAccount(
+    accountId: string,
+    value: {
+      statementDate: string;
+      statementBalance: string;
+      clearedTransactionIds: string[];
+    },
+  ): Promise<Result<unknown>>;
+  schedules(through?: string): Promise<Result<TransactionSchedule[]>>;
+  createSchedule(value: {
+    accountId: string;
+    transferAccountId: string | null;
+    categoryId: string | null;
+    type: "EXPENSE" | "INCOME" | "TRANSFER";
+    amount: string;
+    currency: string;
+    description: string | null;
+    note: string | null;
+    frequency: "WEEKLY" | "MONTHLY" | "YEARLY";
+    interval: number;
+    startsOn: string;
+    endsOn: string | null;
+  }): Promise<Result<TransactionSchedule>>;
+  resolveScheduleOccurrence(
+    id: string,
+    action: "POSTED" | "SKIPPED",
+  ): Promise<Result<unknown>>;
 }
 
 export type AuthState =

@@ -21,9 +21,12 @@ model Account {
   updatedAt      DateTime    @updatedAt @db.Timestamptz(3)
   deletedAt      DateTime?   @db.Timestamptz(3)
 
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  transactions         Transaction[] @relation("TransactionAccount")
-  transferTransactions Transaction[] @relation("TransferAccount")
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions         Transaction[]             @relation("TransactionAccount")
+  transferTransactions Transaction[]             @relation("TransferAccount")
+  reconciliationStates AccountTransactionState[]
+  reconciliations      Reconciliation[]
+  schedules            TransactionSchedule[]     @relation("ScheduleAccount")
 
   @@index([userId, isArchived])
 }

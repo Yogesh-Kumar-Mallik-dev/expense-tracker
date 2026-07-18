@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
 import test, { after, afterEach, before, beforeEach } from "node:test";
 import React from "react";
 import { JSDOM } from "jsdom";
 import { formatMoney } from "../../packages/ui-web/ui-src/src/money";
 import {
   ApiError,
+  fingerprintTransactionCsvRow,
+  previewTransactionCsv,
   RestExpenseClient,
   ResponseValidationError,
+  writeTransactionCsv,
   type Account,
   type RegistrationInput,
   type ExpenseDataClient,
@@ -59,6 +63,7 @@ const SESSION: Session = {
     email: "person@example.com",
     name: "Example Person",
     currency: "INR",
+    timezone: "Asia/Kolkata",
   },
   tokens: {
     accessToken: "access-token",
@@ -83,7 +88,7 @@ before(() => {
     getComputedStyle: dom.window.getComputedStyle,
     location: dom.window.location,
     history: dom.window.history,
-    crypto: dom.window.crypto,
+    crypto: webcrypto,
   })) {
     Object.defineProperty(globalThis, name, {
       configurable: true,
@@ -124,6 +129,54 @@ test("money formatting preserves values beyond Number safe integer precision", (
   assert.match(
     formatMoney("9007199254740993.1250", "INR", "en-IN"),
     /9,00,71,99,25,47,40,993\.12/,
+  );
+});
+
+test("CSV preview preserves quoted fields and fixed-point money", () => {
+  const csv = writeTransactionCsv([
+    {
+      date: "2026-07-18",
+      type: "EXPENSE",
+      amount: "9007199254740993.1234",
+      currency: "INR",
+      account: "Cash",
+      transferAccount: "",
+      category: "Food",
+      description: 'Lunch, "special"',
+      note: "receipt\nkept",
+    },
+  ]);
+  const preview = previewTransactionCsv(csv);
+  assert.equal(preview.invalid.length, 0);
+  assert.equal(preview.valid[0]?.value.amount, "9007199254740993.1234");
+  assert.equal(preview.valid[0]?.value.description, 'Lunch, "special"');
+});
+
+test("CSV fingerprints are stable and account-specific", async () => {
+  const row = previewTransactionCsv(
+    "date,type,amount,currency,account,transferAccount,category,description,note\n2026-07-18,EXPENSE,10.00,INR,Cash,,Food,Lunch,\n",
+  ).valid[0]!.value;
+  const first = await fingerprintTransactionCsvRow(row, {
+    accountId: ACCOUNT.id,
+    transferAccountId: null,
+    categoryId: null,
+  });
+  assert.equal(first.length, 64);
+  assert.equal(
+    first,
+    await fingerprintTransactionCsvRow(row, {
+      accountId: ACCOUNT.id,
+      transferAccountId: null,
+      categoryId: null,
+    }),
+  );
+  assert.notEqual(
+    first,
+    await fingerprintTransactionCsvRow(row, {
+      accountId: "00000000-0000-4000-8000-000000000099",
+      transferAccountId: null,
+      categoryId: null,
+    }),
   );
 });
 
@@ -189,7 +242,7 @@ test("signup validates confirmation and submits the documented registration cont
   assert.equal(authenticated, SESSION);
 });
 
-test("transaction register renders populated data and filters the current page", async () => {
+test("transaction register renders populated data and sends server search", async () => {
   const { render, screen } = await import("@testing-library/react");
   const user = (await import("@testing-library/user-event")).default.setup();
   const { TransactionsScreen } =
@@ -200,7 +253,10 @@ test("transaction register renders populated data and filters the current page",
       data: [],
       meta: { ...META, total: 0, totalPages: 0 },
     }),
-    transactions: async () => ({ data: [TRANSACTION], meta: META }),
+    transactions: async (filters: { search?: string }) => ({
+      data: filters.search ? [] : [TRANSACTION],
+      meta: filters.search ? { ...META, total: 0, totalPages: 0 } : META,
+    }),
   } as unknown as ExpenseDataClient;
   render(
     <TransactionsScreen
@@ -211,10 +267,14 @@ test("transaction register renders populated data and filters the current page",
   assert.ok(await screen.findByRole("button", { name: "Groceries" }));
   assert.ok(screen.getByRole("columnheader", { name: "Amount" }));
   await user.type(
-    screen.getByRole("searchbox", { name: "Search transactions on this page" }),
+    screen.getByRole("searchbox", {
+      name: "Search transaction descriptions and notes",
+    }),
     "missing",
   );
-  assert.ok(screen.getByRole("heading", { name: "No matches on this page" }));
+  assert.ok(
+    await screen.findByRole("heading", { name: "No matches on this page" }),
+  );
 });
 
 test("transaction register keeps a truthful empty state", async () => {

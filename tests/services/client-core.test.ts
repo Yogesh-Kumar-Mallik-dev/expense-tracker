@@ -14,6 +14,7 @@ const session: Session = {
     email: "person@example.com",
     name: null,
     currency: "INR",
+    timezone: "Asia/Kolkata",
   },
   tokens: {
     accessToken: "access",

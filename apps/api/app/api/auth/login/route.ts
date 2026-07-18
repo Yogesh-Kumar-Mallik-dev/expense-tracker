@@ -29,6 +29,7 @@ export const POST = route(async (request: Request) => {
       email: user.email,
       name: user.name,
       currency: user.currency,
+      timezone: user.timezone,
     },
     tokens: await issueTokens(user.id, input.deviceId),
   });

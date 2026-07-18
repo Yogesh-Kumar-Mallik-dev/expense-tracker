@@ -88,31 +88,174 @@ const immutable = new Set(["id", "userId", "createdAt"]);
 const serverOnly = new Set(["passwordHash"]);
 const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
   User: new Set(["email", "name", "currency", "updatedAt", "deletedAt"]),
-  Account: new Set(["userId", "name", "type", "currency", "openingBalance", "color", "icon", "isArchived", "createdAt", "updatedAt", "deletedAt"]),
-  Category: new Set(["userId", "parentId", "name", "type", "color", "icon", "isArchived", "createdAt", "updatedAt", "deletedAt"]),
-  Budget: new Set(["userId", "name", "amount", "currency", "startsOn", "endsOn", "mode", "rolloverPolicy", "createdAt", "updatedAt", "deletedAt"]),
+  Account: new Set([
+    "userId",
+    "name",
+    "type",
+    "currency",
+    "openingBalance",
+    "color",
+    "icon",
+    "isArchived",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
+  Category: new Set([
+    "userId",
+    "parentId",
+    "name",
+    "type",
+    "color",
+    "icon",
+    "isArchived",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
+  Budget: new Set([
+    "userId",
+    "name",
+    "amount",
+    "currency",
+    "startsOn",
+    "endsOn",
+    "mode",
+    "rolloverPolicy",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
   BudgetCategory: new Set(["budgetId", "categoryId", "createdAt", "deletedAt"]),
-  EnvelopeAllocation: new Set(["budgetId", "categoryId", "amount", "occurredAt", "note", "createdAt", "deletedAt"]),
-  BudgetTransfer: new Set(["budgetId", "fromCategoryId", "toCategoryId", "amount", "occurredAt", "note", "createdAt", "deletedAt"]),
-  Transaction: new Set(["userId", "accountId", "transferAccountId", "categoryId", "type", "amount", "currency", "description", "note", "occurredAt", "createdAt", "updatedAt", "deletedAt"]),
-  Tag: new Set(["userId", "name", "color", "createdAt", "updatedAt", "deletedAt"]),
+  EnvelopeAllocation: new Set([
+    "budgetId",
+    "categoryId",
+    "amount",
+    "occurredAt",
+    "note",
+    "createdAt",
+    "deletedAt",
+  ]),
+  BudgetTransfer: new Set([
+    "budgetId",
+    "fromCategoryId",
+    "toCategoryId",
+    "amount",
+    "occurredAt",
+    "note",
+    "createdAt",
+    "deletedAt",
+  ]),
+  Transaction: new Set([
+    "userId",
+    "accountId",
+    "transferAccountId",
+    "categoryId",
+    "type",
+    "amount",
+    "currency",
+    "description",
+    "note",
+    "importFingerprint",
+    "occurredAt",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
+  Tag: new Set([
+    "userId",
+    "name",
+    "color",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
   TransactionTag: new Set(["transactionId", "tagId", "createdAt", "deletedAt"]),
-  Attachment: new Set(["userId", "transactionId", "fileName", "storageKey", "mimeType", "sizeBytes", "createdAt", "deletedAt"]),
-  Device: new Set(["userId", "name", "platform", "lastSeenAt", "createdAt", "deletedAt"]),
-  SyncState: new Set(["userId", "deviceId", "lastSyncedAt", "checkpoint", "createdAt", "updatedAt", "deletedAt"]),
+  Attachment: new Set([
+    "userId",
+    "transactionId",
+    "fileName",
+    "storageKey",
+    "mimeType",
+    "sizeBytes",
+    "createdAt",
+    "deletedAt",
+  ]),
+  Device: new Set([
+    "userId",
+    "name",
+    "platform",
+    "lastSeenAt",
+    "createdAt",
+    "deletedAt",
+  ]),
+  SyncState: new Set([
+    "userId",
+    "deviceId",
+    "lastSyncedAt",
+    "checkpoint",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
 };
 const requiredPutFields: Record<Operation["table"], readonly string[]> = {
   User: [],
-  Account: ["userId", "name", "type", "currency", "openingBalance", "isArchived", "createdAt", "updatedAt"],
+  Account: [
+    "userId",
+    "name",
+    "type",
+    "currency",
+    "openingBalance",
+    "isArchived",
+    "createdAt",
+    "updatedAt",
+  ],
   Category: ["userId", "name", "type", "isArchived", "createdAt", "updatedAt"],
-  Budget: ["userId", "name", "amount", "currency", "startsOn", "endsOn", "mode", "rolloverPolicy", "createdAt", "updatedAt"],
+  Budget: [
+    "userId",
+    "name",
+    "amount",
+    "currency",
+    "startsOn",
+    "endsOn",
+    "mode",
+    "rolloverPolicy",
+    "createdAt",
+    "updatedAt",
+  ],
   BudgetCategory: ["budgetId", "categoryId", "createdAt"],
-  EnvelopeAllocation: ["budgetId", "categoryId", "amount", "occurredAt", "createdAt"],
+  EnvelopeAllocation: [
+    "budgetId",
+    "categoryId",
+    "amount",
+    "occurredAt",
+    "createdAt",
+  ],
   BudgetTransfer: ["budgetId", "amount", "occurredAt", "createdAt"],
-  Transaction: ["userId", "accountId", "transferAccountId", "categoryId", "type", "amount", "currency", "occurredAt", "createdAt", "updatedAt"],
+  Transaction: [
+    "userId",
+    "accountId",
+    "transferAccountId",
+    "categoryId",
+    "type",
+    "amount",
+    "currency",
+    "occurredAt",
+    "createdAt",
+    "updatedAt",
+  ],
   Tag: ["userId", "name", "createdAt", "updatedAt"],
   TransactionTag: ["transactionId", "tagId", "createdAt"],
-  Attachment: ["userId", "transactionId", "fileName", "storageKey", "mimeType", "sizeBytes", "createdAt"],
+  Attachment: [
+    "userId",
+    "transactionId",
+    "fileName",
+    "storageKey",
+    "mimeType",
+    "sizeBytes",
+    "createdAt",
+  ],
   Device: ["userId", "name", "platform", "lastSeenAt", "createdAt"],
   SyncState: ["userId", "deviceId", "createdAt", "updatedAt"],
 };
@@ -164,6 +307,19 @@ function cleanData(operation: Operation, userId: string) {
       "INVALID_SYNC_OPERATION",
       "Amount must be a positive decimal with at most four fractional digits",
       ["amount"],
+    );
+  if (
+    operation.table === "Transaction" &&
+    "importFingerprint" in source &&
+    source.importFingerprint !== null &&
+    (typeof source.importFingerprint !== "string" ||
+      !/^[a-f0-9]{64}$/.test(source.importFingerprint))
+  )
+    throw new HttpError(
+      400,
+      "INVALID_SYNC_OPERATION",
+      "Import fingerprint must be a SHA-256 hexadecimal string",
+      ["importFingerprint"],
     );
   return result;
 }
@@ -223,12 +379,20 @@ async function assertOwned(
     const record = existing as Record<string, unknown> | null;
     const budgetId = operation.data?.budgetId ?? record?.budgetId;
     if (typeof budgetId !== "string")
-      throw new HttpError(400, "INVALID_SYNC_OPERATION", "budgetId is required");
+      throw new HttpError(
+        400,
+        "INVALID_SYNC_OPERATION",
+        "budgetId is required",
+      );
     const budget = await db.budget.findFirst({
       where: { id: budgetId, userId, deletedAt: null, mode: "ENVELOPE" },
     });
     if (!budget)
-      throw new HttpError(403, "SYNC_OWNERSHIP_VIOLATION", "Envelope budget is not owned by this user");
+      throw new HttpError(
+        403,
+        "SYNC_OWNERSHIP_VIOLATION",
+        "Envelope budget is not owned by this user",
+      );
     const categoryIds =
       operation.table === "EnvelopeAllocation"
         ? [operation.data?.categoryId]
@@ -282,8 +446,7 @@ async function assertOwned(
             select: { tagId: true },
           });
     const tagId = operation.data?.tagId ?? existingTag?.tagId;
-    if (typeof tagId === "string")
-      await requireOwnedTag(userId, tagId, db);
+    if (typeof tagId === "string") await requireOwnedTag(userId, tagId, db);
     return;
   }
   if (operation.table === "User") {
@@ -467,7 +630,9 @@ export async function applyUpload(
                     : "MISSING_PARENT",
                 fields: [],
                 recovery:
-                  error.code === "P2002" ? "RENAME_OR_MERGE" : "RECREATE_PARENT",
+                  error.code === "P2002"
+                    ? "RENAME_OR_MERGE"
+                    : "RECREATE_PARENT",
               },
             },
           );

@@ -32,7 +32,9 @@ import {
   BudgetsScreen,
   OverviewScreen,
   ReportsScreen,
+  ReconciliationScreen,
   SettingsScreen,
+  SchedulesScreen,
   SyncScreen,
 } from "./screens/supporting-screens";
 import { TransactionsScreen } from "./screens/transactions-screen";
@@ -44,6 +46,8 @@ export type AppRoute =
   | "accounts"
   | "categories"
   | "budgets"
+  | "schedules"
+  | "reconciliation"
   | "reports"
   | "sync"
   | "settings";
@@ -56,13 +60,17 @@ const routes: Array<{
   { route: "accounts", label: "Accounts", icon: Landmark },
   { route: "categories", label: "Categories & tags", icon: Tags },
   { route: "budgets", label: "Budgets", icon: SlidersHorizontal },
+  { route: "schedules", label: "Schedules", icon: ReceiptText },
+  { route: "reconciliation", label: "Reconciliation", icon: Landmark },
   { route: "reports", label: "Reports", icon: ChartNoAxesColumn },
   { route: "sync", label: "Synchronization", icon: RefreshCw },
   { route: "settings", label: "Settings", icon: Settings },
 ];
 
 function routeFromHash(): AppRoute {
-  const route = globalThis.location?.hash.replace(/^#\//, "") as AppRoute;
+  const route = globalThis.location?.hash
+    .replace(/^#\//, "")
+    .split("?")[0] as AppRoute;
   return ["overview", ...routes.map((item) => item.route)].includes(route)
     ? route
     : "transactions";
@@ -195,7 +203,11 @@ export function AppShell({
               defaultCurrency={session.user.currency}
             />
           ) : null}
-          {route === "reports" ? <ReportsScreen /> : null}
+          {route === "schedules" ? <SchedulesScreen api={api} /> : null}
+          {route === "reconciliation" ? (
+            <ReconciliationScreen api={api} />
+          ) : null}
+          {route === "reports" ? <ReportsScreen api={api} /> : null}
           {route === "sync" ? <SyncScreen sync={sync} /> : null}
           {route === "settings" ? (
             <SettingsScreen

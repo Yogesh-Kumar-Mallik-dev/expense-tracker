@@ -29,6 +29,20 @@
       "when": 1784367439459,
       "tag": "0003_complex_james_howlett",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784369585185,
+      "tag": "0004_thin_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784371721098,
+      "tag": "0005_blushing_ultimo",
+      "breakpoints": true
     }
   ]
 }

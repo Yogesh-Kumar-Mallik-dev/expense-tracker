@@ -101,14 +101,19 @@ Every API response includes rate-limit headers. Exceeding a policy returns
 
 ## Route groups
 
-| Group          | Routes                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| Health         | `/api/health`                                                                                    |
-| Authentication | `/api/auth/register`, `/login`, `/refresh`, `/logout`, `/confirm-email`                          |
-| Public keys    | `/api/auth/keys`                                                                                 |
-| Profile        | `/api/users/me`, `/api/users/me/email-change`                                                   |
-| Domains        | `/api/accounts`, `/categories`, `/tags`, `/budgets`, `/transactions`, `/attachments`, `/devices` |
-| Assignments    | `/api/budgets/:id/categories`, `/api/transactions/:id/tags`                                      |
-| Reporting      | `/api/reporting/account-balances`, `/api/reporting/budget-usage`                                 |
-| PowerSync      | `/api/powersync/credentials`, `/api/powersync/upload`                                            |
-| Binary files   | `/api/attachments/upload`, `/complete`, `/:id/download`                                          |
+| Group           | Routes                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Health          | `/api/health`                                                                                    |
+| Authentication  | `/api/auth/register`, `/login`, `/refresh`, `/logout`, `/confirm-email`                          |
+| Public keys     | `/api/auth/keys`                                                                                 |
+| Profile         | `/api/users/me`, `/api/users/me/email-change`                                                    |
+| Backup          | `/api/users/me/backup`                                                                           |
+| Restore staging | `/api/users/me/restore-datasets`                                                                 |
+| Schedules       | `/api/schedules`, `/api/schedules/occurrences/:id`                                               |
+| Reconciliation  | `/api/accounts/:id/reconcile`                                                                    |
+| Net worth       | `/api/reporting/net-worth-history`                                                               |
+| Domains         | `/api/accounts`, `/categories`, `/tags`, `/budgets`, `/transactions`, `/attachments`, `/devices` |
+| Assignments     | `/api/budgets/:id/categories`, `/api/transactions/:id/tags`                                      |
+| Reporting       | `/api/reporting/account-balances`, `/budget-usage`, `/period-spending`, `/category-spending`     |
+| PowerSync       | `/api/powersync/credentials`, `/api/powersync/upload`                                            |
+| Binary files    | `/api/attachments/upload`, `/complete`, `/:id/download`                                          |

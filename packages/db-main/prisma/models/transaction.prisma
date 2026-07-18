@@ -15,20 +15,24 @@ model Transaction {
   currency          String          @db.VarChar(3)
   description       String?
   note              String?
+  importFingerprint String?
   occurredAt        DateTime        @db.Timestamptz(3)
   createdAt         DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime        @updatedAt @db.Timestamptz(3)
   deletedAt         DateTime?       @db.Timestamptz(3)
 
-  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
-  account         Account          @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Restrict)
-  transferAccount Account?         @relation("TransferAccount", fields: [transferAccountId], references: [id], onDelete: Restrict)
-  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  attachments     Attachment[]
-  tags            TransactionTag[]
+  user                User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  account             Account                   @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Restrict)
+  transferAccount     Account?                  @relation("TransferAccount", fields: [transferAccountId], references: [id], onDelete: Restrict)
+  category            Category?                 @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  attachments         Attachment[]
+  tags                TransactionTag[]
+  accountStates       AccountTransactionState[]
+  scheduleOccurrences ScheduleOccurrence[]
 
   @@index([userId, occurredAt])
   @@index([accountId, occurredAt])
   @@index([categoryId, occurredAt])
   @@index([transferAccountId])
+  @@index([userId, importFingerprint])
 }

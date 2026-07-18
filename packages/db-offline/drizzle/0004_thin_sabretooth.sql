@@ -1,0 +1,2 @@
+ALTER TABLE `Transaction` ADD `importFingerprint` text;--> statement-breakpoint
+CREATE UNIQUE INDEX `Transaction_userId_importFingerprint_active_key` ON `Transaction` (`userId`,`importFingerprint`) WHERE "Transaction"."deletedAt" is null and "Transaction"."importFingerprint" is not null;

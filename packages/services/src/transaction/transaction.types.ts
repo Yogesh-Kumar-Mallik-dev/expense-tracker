@@ -11,6 +11,7 @@ export interface TransactionRecord {
   currency: string;
   description: string | null;
   note: string | null;
+  importFingerprint?: string | null;
   occurredAt: string;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +48,7 @@ export interface TransactionRepositoryPort {
       categoryId?: string;
       from?: string;
       to?: string;
+      search?: string;
       offset?: number;
       limit?: number;
     },
@@ -58,6 +60,7 @@ export interface TransactionRepositoryPort {
       categoryId?: string;
       from?: string;
       to?: string;
+      search?: string;
       offset: number;
       limit: number;
     },

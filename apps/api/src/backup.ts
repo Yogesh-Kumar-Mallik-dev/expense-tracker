@@ -1,0 +1,82 @@
+import { prisma } from "@expense-tracker/db-main";
+
+export async function exportUserBackup(userId: string) {
+  const [
+    user,
+    accounts,
+    categories,
+    transactions,
+    budgets,
+    budgetCategories,
+    envelopeAllocations,
+    budgetTransfers,
+    tags,
+    transactionTags,
+    attachments,
+    schedules,
+    scheduleOccurrences,
+    accountTransactionStates,
+    reconciliations,
+  ] = await prisma.$transaction([
+    prisma.user.findFirstOrThrow({
+      where: { id: userId, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        currency: true,
+        timezone: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.account.findMany({ where: { userId } }),
+    prisma.category.findMany({ where: { userId } }),
+    prisma.transaction.findMany({ where: { userId } }),
+    prisma.budget.findMany({ where: { userId } }),
+    prisma.budgetCategory.findMany({ where: { budget: { userId } } }),
+    prisma.envelopeAllocation.findMany({ where: { budget: { userId } } }),
+    prisma.budgetTransfer.findMany({ where: { budget: { userId } } }),
+    prisma.tag.findMany({ where: { userId } }),
+    prisma.transactionTag.findMany({ where: { transaction: { userId } } }),
+    prisma.attachment.findMany({ where: { userId } }),
+    prisma.transactionSchedule.findMany({ where: { userId } }),
+    prisma.scheduleOccurrence.findMany({
+      where: { schedule: { userId } },
+    }),
+    prisma.accountTransactionState.findMany({
+      where: { account: { userId } },
+    }),
+    prisma.reconciliation.findMany({ where: { account: { userId } } }),
+  ]);
+  return {
+    format: "expense-tracker-backup",
+    schemaVersion: 2,
+    exportedAt: new Date().toISOString(),
+    user,
+    records: {
+      accounts,
+      categories,
+      transactions,
+      budgets,
+      budgetCategories,
+      envelopeAllocations,
+      budgetTransfers,
+      tags,
+      transactionTags,
+      attachments,
+      schedules,
+      scheduleOccurrences,
+      accountTransactionStates,
+      reconciliations,
+    },
+    omissions: [
+      "authentication secrets",
+      "refresh tokens",
+      "devices",
+      "synchronization state",
+      "attachment bytes",
+      "local retry queues",
+    ],
+  };
+}

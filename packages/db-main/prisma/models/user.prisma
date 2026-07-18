@@ -4,19 +4,22 @@ model User {
   passwordHash String
   name         String?
   currency     String    @default("USD") @db.VarChar(3)
+  timezone     String    @default("UTC")
   createdAt    DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt    DateTime? @db.Timestamptz(3)
 
-  accounts      Account[]
-  attachments   Attachment[]
-  budgets       Budget[]
-  categories    Category[]
-  devices       Device[]
-  refreshTokens RefreshToken[]
-  syncStates    SyncState[]
-  tags          Tag[]
-  transactions  Transaction[]
+  accounts          Account[]
+  attachments       Attachment[]
+  budgets           Budget[]
+  categories        Category[]
+  devices           Device[]
+  refreshTokens     RefreshToken[]
+  syncStates        SyncState[]
+  tags              Tag[]
+  transactions      Transaction[]
+  schedules         TransactionSchedule[]
+  restoreDatasets   RestoreDataset[]
   emailChangeTokens EmailChangeToken[]
 }
 

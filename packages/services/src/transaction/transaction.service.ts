@@ -50,6 +50,7 @@ export class TransactionService {
       categoryId?: string;
       from?: string;
       to?: string;
+      search?: string;
       offset: number;
       limit: number;
     },
@@ -63,6 +64,7 @@ export class TransactionService {
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters.from ? { from: filters.from } : {}),
       ...(filters.to ? { to: filters.to } : {}),
+      ...(filters.search ? { search: filters.search.trim() } : {}),
     });
     return {
       items: values.slice(filters.offset, filters.offset + filters.limit),

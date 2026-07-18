@@ -7,10 +7,7 @@ import {
   nextErrorId,
   resetRequestIdsForTests,
 } from "../../packages/logger/src/request";
-import type {
-  LogEntry,
-  LogTransport,
-} from "../../packages/logger/src/types";
+import type { LogEntry, LogTransport } from "../../packages/logger/src/types";
 
 class CaptureTransport implements LogTransport {
   entries: LogEntry[] = [];
@@ -130,7 +127,7 @@ test("stack box uses the error ID as its reference without repeating request met
     width: 100,
     includeStack: true,
   });
-  assert.match(output, /STACK  \[REQUEST-01-E01\]/);
+  assert.match(output, /STACK {2}\[REQUEST-01-E01\]/);
   assert.match(output, /Error ID\s+│ REQUEST-01-E01/);
   assert.match(output, /Stack\s+│ Error: database unavailable/);
   assert.doesNotMatch(output, /POST\s+\/api\/auth\/register/);

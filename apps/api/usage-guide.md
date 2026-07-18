@@ -336,6 +336,17 @@ curl -H "authorization: Bearer $ACCESS_TOKEN" \
   "$API/api/reporting/budget-usage?from=2026-07-01&to=2026-07-31"
 ```
 
+Period and category spending require UTC date-time boundaries and group results
+by currency rather than converting between currencies:
+
+```sh
+curl -H "authorization: Bearer $ACCESS_TOKEN" \
+  "$API/api/reporting/period-spending?from=2026-07-01T00:00:00.000Z&to=2026-07-31T23:59:59.999Z"
+
+curl -H "authorization: Bearer $ACCESS_TOKEN" \
+  "$API/api/reporting/category-spending?from=2026-07-01T00:00:00.000Z&to=2026-07-31T23:59:59.999Z"
+```
+
 Read `excludedTransactionIds` before displaying totals. It identifies
 transactions whose currency could not be combined with the target account or
 budget.

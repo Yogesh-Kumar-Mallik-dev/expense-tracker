@@ -7,6 +7,7 @@ export const users = sqliteTable(
     email: text("email").notNull().unique(),
     name: text("name"),
     currency: text("currency", { length: 3 }).notNull().default("USD"),
+    timezone: text("timezone").notNull().default("UTC"),
     createdAt: text("createdAt").notNull(),
     updatedAt: text("updatedAt").notNull(),
     deletedAt: text("deletedAt"),

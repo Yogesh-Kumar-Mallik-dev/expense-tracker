@@ -277,6 +277,78 @@ test("reporting derives budget usage and reports currency exclusions", async () 
   assert.equal(usage?.excludedTransactionIds.length, 1);
 });
 
+test("period and category reports group complete source records by currency", async () => {
+  const categoryId = "00000000-0000-4000-8000-000000000006";
+  const transaction = (
+    id: string,
+    type: TransactionRecord["type"],
+    amount: string,
+    currency: string,
+  ): TransactionRecord => ({
+    id,
+    userId: USER,
+    accountId: ACCOUNT,
+    transferAccountId: null,
+    categoryId: type === "EXPENSE" ? categoryId : null,
+    type,
+    amount,
+    currency,
+    description: null,
+    note: null,
+    occurredAt: clock(),
+    createdAt: clock(),
+    updatedAt: clock(),
+    deletedAt: null,
+  });
+  const reports = new ReportingService({
+    listAccounts: async () => [],
+    listTransactions: async () => [
+      transaction(
+        "00000000-0000-4000-8000-000000000011",
+        "INCOME",
+        "10",
+        "USD",
+      ),
+      transaction(
+        "00000000-0000-4000-8000-000000000012",
+        "EXPENSE",
+        "3.25",
+        "USD",
+      ),
+      transaction(
+        "00000000-0000-4000-8000-000000000013",
+        "EXPENSE",
+        "5",
+        "INR",
+      ),
+    ],
+    listBudgets: async () => [],
+    listBudgetCategories: async () => [],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
+  });
+  assert.deepEqual(await reports.periodSpending(USER, clock(), clock()), [
+    {
+      currency: "INR",
+      income: "0.0000",
+      expenses: "5.0000",
+      net: "-5.0000",
+      transactionCount: 1,
+    },
+    {
+      currency: "USD",
+      income: "10.0000",
+      expenses: "3.2500",
+      net: "6.7500",
+      transactionCount: 2,
+    },
+  ]);
+  assert.deepEqual(await reports.categorySpending(USER, clock(), clock()), [
+    { categoryId, currency: "INR", amount: "5.0000", transactionCount: 1 },
+    { categoryId, currency: "USD", amount: "3.2500", transactionCount: 1 },
+  ]);
+});
+
 test("envelope usage applies period boundaries and positive-only rollover", async () => {
   const budgetId = "00000000-0000-4000-8000-000000000021";
   const categoryId = "00000000-0000-4000-8000-000000000022";
@@ -387,4 +459,54 @@ test("partial workflows and permanent conflicts remain explicit", () => {
     recovery: "RENAME",
   });
   assert.equal(isPermanentSyncConflict(error), true);
+});
+
+test("net-worth history preserves currencies and ignores transfers", async () => {
+  const reports = new ReportingService({
+    listAccounts: async () => [
+      {
+        id: ACCOUNT,
+        userId: USER,
+        name: "Cash",
+        type: "CASH",
+        currency: "USD",
+        openingBalance: "10.0000",
+        color: null,
+        icon: null,
+        isArchived: false,
+        createdAt: "2026-07-01T00:00:00.000Z",
+        updatedAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listTransactions: async () => [
+      {
+        id: TX,
+        userId: USER,
+        accountId: ACCOUNT,
+        transferAccountId: null,
+        categoryId: null,
+        type: "EXPENSE",
+        amount: "2.5000",
+        currency: "USD",
+        description: null,
+        note: null,
+        occurredAt: "2026-07-02T12:00:00.000Z",
+        createdAt: clock(),
+        updatedAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listBudgets: async () => [],
+    listBudgetCategories: async () => [],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
+  });
+  assert.deepEqual(
+    await reports.netWorthHistory(USER, "2026-07-01", "2026-07-02"),
+    [
+      { date: "2026-07-01", currency: "USD", balance: "10.0000" },
+      { date: "2026-07-02", currency: "USD", balance: "7.5000" },
+    ],
+  );
 });

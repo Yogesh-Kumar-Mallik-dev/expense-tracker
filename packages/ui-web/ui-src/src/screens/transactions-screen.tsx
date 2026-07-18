@@ -24,6 +24,9 @@ import {
 } from "#components/ui/table";
 import {
   ApiError,
+  previewTransactionCsv,
+  fingerprintTransactionCsvRow,
+  writeTransactionCsv,
   type Account,
   type Category,
   type ExpenseDataClient,
@@ -55,9 +58,18 @@ export function TransactionsScreen({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [meta, setMeta] = useState(initialMeta);
-  const [filters, setFilters] = useState<TransactionFilters>({
-    page: 1,
-    pageSize: 25,
+  const [filters, setFilters] = useState<TransactionFilters>(() => {
+    const query = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+    return {
+      page: 1,
+      pageSize: 25,
+      ...(query.get("accountId") ? { accountId: query.get("accountId")! } : {}),
+      ...(query.get("categoryId")
+        ? { categoryId: query.get("categoryId")! }
+        : {}),
+      ...(query.get("from") ? { from: query.get("from")! } : {}),
+      ...(query.get("to") ? { to: query.get("to")! } : {}),
+    };
   });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -69,6 +81,8 @@ export function TransactionsScreen({
   const [recentlyDeleted, setRecentlyDeleted] = useState<Transaction | null>(
     null,
   );
+  const [transferringFile, setTransferringFile] = useState(false);
+  const [fileMessage, setFileMessage] = useState("");
   const setOptionalFilter = (
     key: "accountId" | "categoryId" | "from" | "to",
     value: string,
@@ -143,24 +157,23 @@ export function TransactionsScreen({
     return () => controller.abort();
   }, [loadTransactions]);
 
-  const visibleTransactions = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase();
-    if (!term) return transactions;
-    return transactions.filter((transaction) => {
-      const account =
-        accounts.find((item) => item.id === transaction.accountId)?.name ?? "";
-      const category =
-        categories.find((item) => item.id === transaction.categoryId)?.name ??
-        "";
-      return [
-        transaction.description,
-        transaction.note,
-        account,
-        category,
-        transaction.amount,
-      ].some((value) => value?.toLocaleLowerCase().includes(term));
-    });
-  }, [accounts, categories, search, transactions]);
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () =>
+        setFilters((current) => {
+          const value = search.trim();
+          if ((current.search ?? "") === value) return current;
+          const next = { ...current, page: 1 };
+          if (value) next.search = value;
+          else delete next.search;
+          return next;
+        }),
+      250,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
+  const visibleTransactions = useMemo(() => transactions, [transactions]);
 
   const remove = async (transaction: Transaction) => {
     if (
@@ -185,6 +198,151 @@ export function TransactionsScreen({
       setDeleting(null);
     }
   };
+  const exportCsv = async () => {
+    setTransferringFile(true);
+    try {
+      const rows: Transaction[] = [];
+      for (let page = 1; ; page += 1) {
+        const result = await api.transactions({
+          ...filters,
+          page,
+          pageSize: 100,
+        });
+        rows.push(...result.data);
+        if (!result.meta?.hasNext) break;
+      }
+      const accountNames = new Map(
+        accounts.map((value) => [value.id, value.name]),
+      );
+      const categoryNames = new Map(
+        categories.map((value) => [value.id, value.name]),
+      );
+      const csv = writeTransactionCsv(
+        rows.map((value) => ({
+          date: value.occurredAt.slice(0, 10),
+          type: value.type,
+          amount: value.amount,
+          currency: value.currency,
+          account: accountNames.get(value.accountId) ?? value.accountId,
+          transferAccount: value.transferAccountId
+            ? (accountNames.get(value.transferAccountId) ??
+              value.transferAccountId)
+            : "",
+          category: value.categoryId
+            ? (categoryNames.get(value.categoryId) ?? value.categoryId)
+            : "",
+          description: value.description ?? "",
+          note: value.note ?? "",
+        })),
+      );
+      const url = URL.createObjectURL(
+        new Blob([csv], { type: "text/csv;charset=utf-8" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "CSV export failed.");
+    } finally {
+      setTransferringFile(false);
+    }
+  };
+  const importCsv = async (file: File) => {
+    setTransferringFile(true);
+    setFileMessage("");
+    try {
+      const preview = previewTransactionCsv(await file.text());
+      const firstInvalid = preview.invalid[0];
+      if (firstInvalid)
+        throw new Error(
+          `Row ${firstInvalid.rowNumber}: ${firstInvalid.message}`,
+        );
+      if (!preview.valid.length)
+        throw new Error("CSV contains no transaction rows.");
+      if (!window.confirm(`Import ${preview.valid.length} transactions?`))
+        return;
+      const accountIds = new Map(
+        accounts.map((value) => [value.name.toLocaleLowerCase(), value.id]),
+      );
+      const categoryIds = new Map(
+        categories.map((value) => [value.name.toLocaleLowerCase(), value.id]),
+      );
+      const failures: string[] = [];
+      const fingerprints = new Set<string>();
+      for (let page = 1; ; page += 1) {
+        const existing = await api.transactions({ page, pageSize: 100 });
+        for (const transaction of existing.data)
+          if (transaction.importFingerprint)
+            fingerprints.add(transaction.importFingerprint);
+        if (!existing.meta?.hasNext) break;
+      }
+      let duplicates = 0;
+      for (const row of preview.valid) {
+        const accountId = accountIds.get(row.value.account.toLocaleLowerCase());
+        const transferAccountId = row.value.transferAccount
+          ? accountIds.get(row.value.transferAccount.toLocaleLowerCase())
+          : undefined;
+        const categoryId = row.value.category
+          ? categoryIds.get(row.value.category.toLocaleLowerCase())
+          : undefined;
+        if (
+          !accountId ||
+          (row.value.transferAccount && !transferAccountId) ||
+          (row.value.category && !categoryId)
+        ) {
+          failures.push(
+            `row ${row.rowNumber}: referenced account or category was not found`,
+          );
+          continue;
+        }
+        const importFingerprint = await fingerprintTransactionCsvRow(
+          row.value,
+          {
+            accountId,
+            transferAccountId: transferAccountId ?? null,
+            categoryId: categoryId ?? null,
+          },
+        );
+        if (fingerprints.has(importFingerprint)) {
+          duplicates += 1;
+          continue;
+        }
+        try {
+          await api.createTransaction({
+            accountId,
+            transferAccountId: transferAccountId ?? null,
+            categoryId: categoryId ?? null,
+            type: row.value.type,
+            amount: row.value.amount,
+            currency: row.value.currency,
+            description: row.value.description || null,
+            note: row.value.note || null,
+            importFingerprint,
+            occurredAt: new Date(`${row.value.date}T12:00:00`).toISOString(),
+          });
+          fingerprints.add(importFingerprint);
+        } catch (caught) {
+          failures.push(
+            `row ${row.rowNumber}: ${caught instanceof Error ? caught.message : "creation failed"}`,
+          );
+        }
+      }
+      await loadTransactions(undefined, true);
+      if (failures.length)
+        setError(
+          `${preview.valid.length - failures.length - duplicates} imported; ${duplicates} duplicates skipped; ${failures.length} failed. ${failures[0]}`,
+        );
+      else if (duplicates)
+        setFileMessage(`${duplicates} duplicate transaction(s) were skipped.`);
+      else setFileMessage(`${preview.valid.length} transaction(s) imported.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "CSV import failed.");
+    } finally {
+      setTransferringFile(false);
+    }
+  };
 
   return (
     <section className="route-screen" aria-labelledby="transactions-title">
@@ -195,6 +353,36 @@ export function TransactionsScreen({
           <p>Record and review money moving through your accounts.</p>
         </div>
         <div className="header-actions">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={transferringFile}
+            onClick={() => void exportCsv()}
+          >
+            Export CSV
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={transferringFile}
+            onClick={() =>
+              document.getElementById("transaction-csv-import")?.click()
+            }
+          >
+            Import CSV
+          </Button>
+          <Input
+            id="transaction-csv-import"
+            className="sr-only"
+            type="file"
+            accept=".csv,text/csv"
+            disabled={transferringFile}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void importCsv(file);
+              event.target.value = "";
+            }}
+          />
           <Button
             variant="outline"
             type="button"
@@ -251,6 +439,7 @@ export function TransactionsScreen({
           </AlertDescription>
         </Alert>
       ) : null}
+      {fileMessage ? <p role="status">{fileMessage}</p> : null}
       {recentlyDeleted ? (
         <Alert>
           <AlertTitle>Transaction deleted</AlertTitle>
@@ -286,14 +475,14 @@ export function TransactionsScreen({
           <div className="page-search">
             <Search aria-hidden="true" />
             <Label className="sr-only" htmlFor="transaction-search">
-              Search transactions on this page
+              Search transaction descriptions and notes
             </Label>
             <Input
               id="transaction-search"
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search this page"
+              placeholder="Search descriptions and notes"
             />
           </div>
           <details className="filters">

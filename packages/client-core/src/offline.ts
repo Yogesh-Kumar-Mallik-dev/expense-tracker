@@ -95,6 +95,7 @@ export class OfflineExpenseClient implements ExpenseDataClient {
       ...(filters.to
         ? { to: new Date(`${filters.to}T23:59:59.999`).toISOString() }
         : {}),
+      ...(filters.search ? { search: filters.search } : {}),
       offset: (filters.page - 1) * filters.pageSize,
       limit: filters.pageSize,
     });
@@ -163,6 +164,21 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   async budgetUsage(from: string, to: string) {
     return {
       data: await this.local.reporting.budgetUsage(this.user, from, to),
+    };
+  }
+  async periodSpending(from: string, to: string) {
+    return {
+      data: await this.local.reporting.periodSpending(this.user, from, to),
+    };
+  }
+  async categorySpending(from: string, to: string) {
+    return {
+      data: await this.local.reporting.categorySpending(this.user, from, to),
+    };
+  }
+  async netWorthHistory(from: string, to: string) {
+    return {
+      data: await this.local.reporting.netWorthHistory(this.user, from, to),
     };
   }
   async createBudget(value: BudgetInput) {
@@ -239,7 +255,11 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   deleteDevice(id: string) {
     return this.remote.deleteDevice(id);
   }
-  updateProfile(value: { name?: string | null; currency?: string }) {
+  updateProfile(value: {
+    name?: string | null;
+    currency?: string;
+    timezone?: string;
+  }) {
     return this.remote.updateProfile(value);
   }
   deleteProfile() {
@@ -247,5 +267,33 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   }
   requestEmailChange(email: string) {
     return this.remote.requestEmailChange(email);
+  }
+  exportBackup() {
+    return this.remote.exportBackup();
+  }
+  stageRestore(name: string, backup: unknown) {
+    return this.remote.stageRestore(name, backup);
+  }
+  restoreDatasets() {
+    return this.remote.restoreDatasets();
+  }
+  reconcileAccount(
+    accountId: string,
+    value: {
+      statementDate: string;
+      statementBalance: string;
+      clearedTransactionIds: string[];
+    },
+  ) {
+    return this.remote.reconcileAccount(accountId, value);
+  }
+  schedules(through?: string) {
+    return this.remote.schedules(through);
+  }
+  createSchedule(value: Parameters<ExpenseDataClient["createSchedule"]>[0]) {
+    return this.remote.createSchedule(value);
+  }
+  resolveScheduleOccurrence(id: string, action: "POSTED" | "SKIPPED") {
+    return this.remote.resolveScheduleOccurrence(id, action);
   }
 }

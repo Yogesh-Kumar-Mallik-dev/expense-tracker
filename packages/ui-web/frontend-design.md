@@ -8,11 +8,12 @@ transaction register as the primary workspace:
 - Actual Budget keeps transaction entry, search, filters, import, account
   context, and batch operations adjacent to the register.
 - GnuCash uses a dense register with explicit dates, descriptions, amounts, and
-  reconciliation state. Reconciliation is omitted here because this project
-  has no cleared or reconciled domain fields.
+  reconciliation state. This project now models that state per account-side so
+  transfers can be reconciled correctly.
 - Firefly III separates import conversion/validation from committing records
-  and exposes category automation as explicit rules. This project has neither
-  import nor rule services, so the UI must not imply either exists.
+  and exposes category automation as explicit rules. CSV import is now
+  previewed, validated, and fingerprinted; automatic categorization rules
+  remain intentionally absent.
 - Local-first products expose local availability independently of server
   reachability. This repository has PowerSync connection helpers, but no
   application-facing status model yet.
@@ -40,20 +41,22 @@ installation and must not be described as ReUI.
 
 ## Information architecture
 
-The shared DOM application has six route-level screens:
+The shared DOM application has route-level workflows for:
 
 1. Transactions — default; searchable, server-filtered register with paging,
    add/edit/delete, explicit empty/error/loading states.
 2. Accounts — account list with reporting-service balances and archive-aware
    domain actions.
 3. Budgets — period-based simple-limit and envelope read models.
-4. Reports — honest dependency state. Existing reporting supports current
-   balances and budget usage, but not time-series/category reports or
-   drill-down aggregates.
-5. Synchronization — honest dependency state until the app bootstrap exposes
+4. Schedules — review-first recurring templates and explicit post/skip actions.
+5. Reconciliation — statement cutoff, account-specific cleared selection, and
+   exact fixed-point completion.
+6. Reports — period, category, comparison, and currency-separated net-worth
+   history derived from complete source records.
+7. Synchronization — honest dependency state until the app bootstrap exposes
    PowerSync connection, upload queue, last-sync, and conflict state.
-6. Settings — profile and authenticated-session actions supported by current
-   endpoints; device sessions are listed when available.
+8. Settings — profile, financial timezone, devices, backup export, and isolated
+   restore staging.
 
 Overview is a restrained orientation screen, not the default and not a
 collection of invented metrics.
@@ -97,22 +100,18 @@ and more truthful.
 
 ## Missing dependencies
 
-- Secure web session transport. Current API returns bearer tokens and does not
-  provide an HttpOnly-cookie/BFF flow. The frontend cannot make browser token
-  persistence secure by itself.
-- PowerSync status adapter for online/offline, pending writes, active sync,
-  last successful sync, failures, and permanent conflicts.
-- Reporting endpoints for monthly spending, category totals, period
-  comparisons, time series, net worth, and report drill-down.
-- CSV import/preview/mapping/duplicate-detection service.
-- Cleared and reconciled transaction fields and workflows.
+- A richer visual time-series chart; the truthful tabular net-worth history is
+  implemented.
+- Register-integrated cleared-state selection; the authoritative per-account
+  reconciliation command and model are implemented.
 - Payee/merchant domain distinct from transaction description.
 - Notification domain.
-- Server-side transaction search and sorting parameters.
+- Activation/switching for validated restore datasets. Restore staging and
+  recurring schedule persistence/manual posting are implemented.
 - Batch transaction mutation endpoints.
 
-These capabilities remain absent or explicitly labelled unavailable. They are
-not approximated from a paginated page.
+These capabilities remain absent and are not approximated from a paginated
+page.
 
 ## Design tokens and responsive behavior
 

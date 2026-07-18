@@ -65,21 +65,24 @@ export async function listResource(name: ResourceName, request: Request) {
     case "transactions": {
       const { page, pageSize } = paginationParams(url);
       const result = await services.transactions.page(userId, {
-          ...(url.searchParams.get("accountId")
-            ? { accountId: url.searchParams.get("accountId")! }
-            : {}),
-          ...(url.searchParams.get("categoryId")
-            ? { categoryId: url.searchParams.get("categoryId")! }
-            : {}),
-          ...(url.searchParams.get("from")
-            ? { from: url.searchParams.get("from")! }
-            : {}),
-          ...(url.searchParams.get("to")
-            ? { to: url.searchParams.get("to")! }
-            : {}),
-          offset: (page - 1) * pageSize,
-          limit: pageSize,
-        });
+        ...(url.searchParams.get("accountId")
+          ? { accountId: url.searchParams.get("accountId")! }
+          : {}),
+        ...(url.searchParams.get("categoryId")
+          ? { categoryId: url.searchParams.get("categoryId")! }
+          : {}),
+        ...(url.searchParams.get("from")
+          ? { from: url.searchParams.get("from")! }
+          : {}),
+        ...(url.searchParams.get("to")
+          ? { to: url.searchParams.get("to")! }
+          : {}),
+        ...(url.searchParams.get("search")
+          ? { search: url.searchParams.get("search")! }
+          : {}),
+        offset: (page - 1) * pageSize,
+        limit: pageSize,
+      });
       const totalPages =
         result.total === 0 ? 0 : Math.ceil(result.total / pageSize);
       return ok(result.items, 200, {
@@ -132,10 +135,7 @@ export async function createResource(name: ResourceName, request: Request) {
     case "transactions": {
       const value = createTransactionSchema.parse({ ...input, userId });
       await validateTransactionRelationships(userId, value);
-      return ok(
-        await services.transactions.create(value),
-        201,
-      );
+      return ok(await services.transactions.create(value), 201);
     }
     case "attachments":
       if (
@@ -206,20 +206,20 @@ export async function updateResource(
   else if (name === "transactions") {
     const existing = await services.transactions.get(id, userId);
     if (!existing) throw new HttpError(404, "NOT_FOUND", "Record not found");
-    const value = updateTransactionSchema.parse(input) as UpdateTransactionInput;
+    const value = updateTransactionSchema.parse(
+      input,
+    ) as UpdateTransactionInput;
     await validateTransactionRelationships(userId, {
       accountId: value.accountId,
       transferAccountId: value.transferAccountId,
       categoryId:
-        value.categoryId === undefined
-          ? existing.categoryId
-          : value.categoryId,
+        value.categoryId === undefined ? existing.categoryId : value.categoryId,
       type: value.type,
       currency: value.currency ?? existing.currency,
     });
     await services.transactions.update(id, userId, value);
-  }
-  else if (name === "devices") await services.devices.update(id, userId, input);
+  } else if (name === "devices")
+    await services.devices.update(id, userId, input);
   else
     throw new HttpError(
       405,
