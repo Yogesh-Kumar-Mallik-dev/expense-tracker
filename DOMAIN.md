@@ -1,9 +1,8 @@
-# Phase 4 domain decisions
+# Financial domain decisions
 
-This document records the product behavior adopted before extending the
-financial domain. Repository invariants remain authoritative; mature products
-were used to choose familiar workflows where the repository was previously
-silent.
+This document records project-wide financial behavior and invariants.
+Repository contracts remain authoritative; mature products were used to choose
+familiar workflows where the repository was previously silent.
 
 ## Transaction imports
 

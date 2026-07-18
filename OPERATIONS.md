@@ -1,5 +1,9 @@
 # Release and operations
 
+This document defines project-wide release, retention, backup, and telemetry
+requirements. App-specific commands and integration details remain in each
+application's `README.md`, `docs.md`, and `usage-guide.md`.
+
 ## Mobile releases
 
 Mobile builds use EAS development, preview, and production profiles. Production

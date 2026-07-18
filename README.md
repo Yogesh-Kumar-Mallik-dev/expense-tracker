@@ -198,6 +198,11 @@ restart-safe web, desktop, and mobile runtimes.
 
 # Documentation
 
+Project-wide decisions:
+
+- [Financial domain decisions](./DOMAIN.md)
+- [Release and operations](./OPERATIONS.md)
+
 Each application and package contains:
 
 - `README.md` for purpose, status, and quick orientation.
