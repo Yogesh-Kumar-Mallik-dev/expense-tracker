@@ -10,16 +10,31 @@ import {
 import { DesktopOfflineRuntime } from "./offline";
 
 const DEVICE_KEY = "expense-tracker.desktop-device-id";
+const DEVELOPMENT_REFRESH_KEY = "expense-tracker.desktop-refresh-token";
+
+function runsInsideTauri() {
+  return (
+    typeof window !== "undefined" &&
+    "__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>)
+  );
+}
 
 class DesktopCredentialStore implements SessionCredentialStore {
   read() {
-    return invoke<string | null>("read_refresh_credential");
+    return runsInsideTauri()
+      ? invoke<string | null>("read_refresh_credential")
+      : Promise.resolve(localStorage.getItem(DEVELOPMENT_REFRESH_KEY));
   }
   write(refreshToken: string) {
-    return invoke<void>("write_refresh_credential", { value: refreshToken });
+    if (runsInsideTauri())
+      return invoke<void>("write_refresh_credential", { value: refreshToken });
+    localStorage.setItem(DEVELOPMENT_REFRESH_KEY, refreshToken);
+    return Promise.resolve();
   }
   clear() {
-    return invoke<void>("clear_refresh_credential");
+    if (runsInsideTauri()) return invoke<void>("clear_refresh_credential");
+    localStorage.removeItem(DEVELOPMENT_REFRESH_KEY);
+    return Promise.resolve();
   }
 }
 

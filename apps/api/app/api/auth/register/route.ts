@@ -19,20 +19,23 @@ export const runtime = "nodejs";
 export const POST = route(async (request: Request) => {
   const input = schema.parse(await body(request));
   const passwordHash = await hashPassword(input.password);
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      passwordHash,
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      currency: input.currency,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      currency: true,
-      timezone: true,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: input.email,
+        passwordHash,
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        currency: input.currency,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        currency: true,
+        timezone: true,
+      },
+    });
+    return { user, tokens: await issueTokens(user.id, undefined, tx) };
   });
-  return ok({ user, tokens: await issueTokens(user.id) }, 201);
+  return ok(result, 201);
 });

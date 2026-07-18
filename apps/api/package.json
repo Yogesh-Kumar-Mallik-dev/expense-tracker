@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001",
+    "dev": "DATABASE_URL='postgresql://postgres:postgres@localhost:51214/template1?sslmode=disable&connection_limit=10' ACCESS_TOKEN_SECRET='expense-tracker-local-access-secret-2026' REFRESH_TOKEN_SECRET='expense-tracker-local-refresh-secret-2026' next dev --port 3001",
     "build": "next build",
     "check-types": "tsc --noEmit",
     "lint": "eslint ."

@@ -32,11 +32,15 @@ export async function requireUser(request: Request) {
   return user.id;
 }
 
-export async function issueTokens(userId: string, deviceId?: string | null) {
-  return issueTokensWithClient(prisma, userId, deviceId);
-}
-
 type TokenClient = Pick<typeof prisma, "refreshToken">;
+
+export async function issueTokens(
+  userId: string,
+  deviceId?: string | null,
+  db: TokenClient = prisma,
+) {
+  return issueTokensWithClient(db, userId, deviceId);
+}
 
 async function issueTokensWithClient(
   db: TokenClient,

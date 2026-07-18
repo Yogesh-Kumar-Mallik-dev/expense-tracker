@@ -61,14 +61,16 @@ export class ApplicationSessionController implements SessionController {
 
   async restore() {
     if (this.current.status === "authenticated") return this.current;
-    const refreshToken = await this.options.credentials?.read();
     try {
+      const refreshToken = await this.options.credentials?.read();
       const session = await this.options.transport.refresh(
         refreshToken ?? null,
       );
       await this.accept(session);
     } catch {
-      await this.clear();
+      await this.clear().catch(() => {
+        this.set({ status: "anonymous", session: null });
+      });
     }
     return this.current;
   }

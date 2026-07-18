@@ -332,15 +332,20 @@ pnpm dev
 Run one development target from the repository root:
 
 ```bash
-pnpm dev:api          # Next.js API on http://localhost:3001
-pnpm dev:web          # Next.js web app on http://localhost:3000
-pnpm dev:desktop      # Vite renderer on http://localhost:1420
-pnpm dev:tauri        # Complete Tauri desktop application
-pnpm dev:mobile       # Expo development client
+pnpm dev:database     # Local Prisma Postgres and migrations
+pnpm dev:api          # Database + Next.js API on http://localhost:3001
+pnpm dev:web          # Database + API + Next.js web app on port 3000
+pnpm dev:desktop      # Database + API + browser renderer on port 1420
+pnpm dev:tauri        # Database + API + native Tauri desktop application
+pnpm dev:mobile       # Database + API + Expo development server
 pnpm dev:mobile:web   # Expo web
 pnpm dev:mobile:android
 pnpm dev:mobile:ios
 ```
+
+The composed development commands provision the repository-local Prisma
+Postgres server automatically. Android and iOS launch commands additionally
+require their platform SDKs; iOS requires macOS.
 
 ## Build
 
@@ -350,6 +355,7 @@ pnpm build
 
 Targeted builds are available as `pnpm build:api`, `pnpm build:web`,
 `pnpm build:desktop`, `pnpm build:tauri`, and `pnpm build:mobile`.
+The checked-in Linux Tauri configuration produces `.deb` and `.rpm` bundles.
 
 ## Type checking
 

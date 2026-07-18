@@ -21,13 +21,19 @@ require a store build.
 
 ## Desktop releases
 
-Tauri bundling and updater artifacts are enabled. CI must provide
-`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. The public
-updater key and HTTPS endpoint must be configured only after the release
-infrastructure exists; unsigned or placeholder keys are forbidden.
+Tauri application bundling is enabled. Updater artifacts remain disabled until
+the updater plugin, public key, and HTTPS endpoint are configured together.
+When updates are enabled, CI must provide `TAURI_SIGNING_PRIVATE_KEY` and
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; unsigned or placeholder keys are
+forbidden.
 
 Release artifacts must be signed on every supported operating system and
 installed in a clean virtual machine before publication.
+
+The checked-in Linux bundle targets are `deb` and `rpm`, which build reliably
+on the current development host. Produce AppImage artifacts in a pinned
+Ubuntu-based release runner; the older `linuxdeploy` toolchain cannot strip
+modern RELR-enabled Arch Linux system libraries.
 
 ## Backup and restore drill
 

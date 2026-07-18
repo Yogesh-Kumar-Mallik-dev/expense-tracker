@@ -49,6 +49,29 @@ test("session refresh is single-flight and rotates the stored credential", async
   assert.equal(await credentials.read(), "refresh-next");
 });
 
+test("session restoration recovers when secure credential storage is unavailable", async () => {
+  const controller = new ApplicationSessionController({
+    transport: {
+      refresh: async () => {
+        throw new Error("refresh must not run");
+      },
+    } as unknown as AuthenticationTransport,
+    credentials: {
+      read: async () => {
+        throw new Error("credential bridge unavailable");
+      },
+      write: async () => {},
+      clear: async () => {
+        throw new Error("credential bridge unavailable");
+      },
+    },
+  });
+
+  const state = await controller.restore();
+
+  assert.equal(state.status, "anonymous");
+});
+
 test("per-user database identities are stable and isolated", async () => {
   const first = await stableUserDatabaseIdentity(
     "00000000-0000-4000-8000-000000000001",
