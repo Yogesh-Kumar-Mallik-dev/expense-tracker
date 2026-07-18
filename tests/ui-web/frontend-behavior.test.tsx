@@ -5,10 +5,12 @@ import { JSDOM } from "jsdom";
 import { formatMoney } from "../../packages/ui-web/ui-src/src/money";
 import {
   ApiError,
-  ExpenseApi,
+  RestExpenseClient,
   ResponseValidationError,
   type Account,
   type RegistrationInput,
+  type ExpenseDataClient,
+  type SessionController,
   type Session,
   type Transaction,
 } from "../../packages/ui-web/ui-src/src/api";
@@ -122,7 +124,10 @@ test("API rejects a successful but invalid response envelope", async () => {
   globalThis.fetch = async () =>
     Response.json({ data: [{ id: "not-a-uuid" }], meta: META });
   try {
-    const api = new ExpenseApi("http://api.test", () => "token");
+    const api = new RestExpenseClient("http://api.test", {
+      getAccessToken: async () => "token",
+      refresh: async () => SESSION,
+    });
     await assert.rejects(api.accounts(), ResponseValidationError);
   } finally {
     globalThis.fetch = previousFetch;
@@ -136,16 +141,16 @@ test("signup validates confirmation and submits the documented registration cont
     await import("../../packages/ui-web/ui-src/src/screens/login-screen");
   const registrations: RegistrationInput[] = [];
   let authenticated: Session | null = null;
-  const api = {
+  const session = {
     register: async (input: RegistrationInput) => {
       registrations.push(input);
-      return { data: SESSION };
+      return SESSION;
     },
-  } as unknown as ExpenseApi;
+  } as unknown as SessionController;
 
   render(
     <LoginScreen
-      api={api}
+      session={session}
       onLogin={(session) => {
         authenticated = session;
       }}
@@ -188,7 +193,7 @@ test("transaction register renders populated data and filters the current page",
       meta: { ...META, total: 0, totalPages: 0 },
     }),
     transactions: async () => ({ data: [TRANSACTION], meta: META }),
-  } as unknown as ExpenseApi;
+  } as unknown as ExpenseDataClient;
   render(
     <TransactionsScreen
       api={api}
@@ -218,7 +223,7 @@ test("transaction register keeps a truthful empty state", async () => {
       data: [],
       meta: { ...META, total: 0, totalPages: 0 },
     }),
-  } as unknown as ExpenseApi;
+  } as unknown as ExpenseDataClient;
   render(<TransactionsScreen api={api} onUnauthorized={() => {}} />);
   assert.ok(
     await screen.findByRole("heading", {
@@ -247,7 +252,7 @@ test("transaction failure is recoverable and authentication expiry is separate",
           transactions: async () => {
             throw new Error("Network unavailable");
           },
-        } as unknown as ExpenseApi
+        } as unknown as ExpenseDataClient
       }
       onUnauthorized={() => {}}
     />,
@@ -263,7 +268,7 @@ test("transaction failure is recoverable and authentication expiry is separate",
           transactions: async () => {
             throw new ApiError(401, "Expired");
           },
-        } as unknown as ExpenseApi
+        } as unknown as ExpenseDataClient
       }
       onUnauthorized={() => {
         unauthorized = true;

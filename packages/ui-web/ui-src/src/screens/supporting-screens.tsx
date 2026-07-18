@@ -18,7 +18,7 @@ import type {
   AccountBalance,
   Budget,
   BudgetUsage,
-  ExpenseApi,
+  ExpenseDataClient,
   Session,
 } from "../api";
 import { formatMoney, moneyRatio, parseMoney } from "../money";
@@ -86,7 +86,7 @@ export function AccountsScreen({
   api,
   onUnauthorized,
 }: {
-  api: ExpenseApi;
+  api: ExpenseDataClient;
   onUnauthorized: () => void;
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -205,7 +205,7 @@ export function BudgetsScreen({
   api,
   onUnauthorized,
 }: {
-  api: ExpenseApi;
+  api: ExpenseDataClient;
   onUnauthorized: () => void;
 }) {
   const today = new Date();
@@ -408,11 +408,11 @@ export function SettingsScreen({
         </div>
       </dl>
       <Alert>
-        <AlertTitle>Session persistence is disabled</AlertTitle>
+        <AlertTitle>Session storage</AlertTitle>
         <AlertDescription>
-          The current API does not provide a secure HttpOnly-cookie web session.
-          Refreshing this page signs you out rather than storing bearer and
-          refresh tokens in browser storage.
+          Refresh credentials are kept outside UI state: in an HttpOnly cookie
+          on web and the operating-system credential vault on desktop. Access
+          credentials remain in memory.
         </AlertDescription>
       </Alert>
       <div className="settings-action">

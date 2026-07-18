@@ -12,7 +12,7 @@ connected.
 
 | Capability | API | Web | Desktop | Mobile |
 | --- | --- | --- | --- | --- |
-| Authentication | Implemented | In-memory session | In-memory session | Planned |
+| Authentication | Implemented | HttpOnly refresh cookie | OS-vault refresh credential | Planned |
 | Transaction CRUD | Implemented | Online REST | Online REST | Planned |
 | Local SQLite | Package implemented | Not connected | Not connected | Not connected |
 | PowerSync | Upload/download infrastructure | Not connected | Plugin only | Not connected |
@@ -141,6 +141,7 @@ connected.
 │   ├── logger/                  # Shared structured and visual logging
 │   ├── services/                # Shared business logic
 │   ├── ui-web/                  # Shared Next.js and Tauri UI
+│   ├── client-core/             # Session, transport, and platform composition contracts
 │   ├── ui-native/               # Shared Expo and React Native UI
 │   └── eslint-config/           # Shared lint configuration
 │

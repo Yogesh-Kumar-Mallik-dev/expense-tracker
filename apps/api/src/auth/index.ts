@@ -108,6 +108,9 @@ export async function rotateRefreshToken(token: string) {
         "INVALID_REFRESH_TOKEN",
         "Refresh token is invalid or expired",
       );
-    return issueTokensWithClient(db, payload.sub, stored.deviceId);
+    return {
+      userId: payload.sub,
+      tokens: await issueTokensWithClient(db, payload.sub, stored.deviceId),
+    };
   });
 }

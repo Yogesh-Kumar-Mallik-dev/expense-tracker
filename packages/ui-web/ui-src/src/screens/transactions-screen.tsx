@@ -26,7 +26,7 @@ import {
   ApiError,
   type Account,
   type Category,
-  type ExpenseApi,
+  type ExpenseDataClient,
   type PageMeta,
   type Transaction,
   type TransactionFilters,
@@ -48,7 +48,7 @@ export function TransactionsScreen({
   api,
   onUnauthorized,
 }: {
-  api: ExpenseApi;
+  api: ExpenseDataClient;
   onUnauthorized: () => void;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -101,7 +101,8 @@ export function TransactionsScreen({
 
   const loadTransactions = useCallback(
     async (signal?: AbortSignal, background = false) => {
-      background ? setRefreshing(true) : setLoading(true);
+      if (background) setRefreshing(true);
+      else setLoading(true);
       setError("");
       try {
         const response = await api.transactions(filters, signal);

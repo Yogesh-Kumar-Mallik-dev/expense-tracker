@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "#components/ui/tooltip";
-import type { ExpenseApi, Session } from "./api";
+import type { ExpenseDataClient, Session } from "./api";
 import {
   AccountsScreen,
   BudgetsScreen,
@@ -68,7 +68,7 @@ export function AppShell({
   onLogout,
   diagnostics,
 }: {
-  api: ExpenseApi;
+  api: ExpenseDataClient;
   session: Session;
   platform: "web" | "desktop";
   onUnauthorized: () => void;

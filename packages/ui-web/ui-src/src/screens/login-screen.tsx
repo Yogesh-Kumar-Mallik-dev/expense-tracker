@@ -11,14 +11,18 @@ import {
   FramePanel,
   FrameTitle,
 } from "#components/reui/frame";
-import { ApiError, type ExpenseApi, type Session } from "../api";
+import {
+  ApiError,
+  type Session,
+  type SessionController,
+} from "@expense-tracker/client-core";
 
 export function LoginScreen({
-  api,
+  session,
   onLogin,
   initialMode = "login",
 }: {
-  api: ExpenseApi;
+  session: SessionController;
   onLogin: (session: Session) => void;
   initialMode?: "login" | "signup";
 }) {
@@ -51,14 +55,14 @@ export function LoginScreen({
     try {
       const response =
         mode === "login"
-          ? await api.login(email, password)
-          : await api.register({
+          ? await session.login(email, password)
+          : await session.register({
               email,
               password,
               name: name.trim() || null,
               currency: currency.toUpperCase(),
             });
-      onLogin(response.data);
+      onLogin(response);
     } catch (caught) {
       setError(
         caught instanceof ApiError

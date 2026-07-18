@@ -131,6 +131,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@expense-tracker/client-core':
+        specifier: workspace:*
+        version: link:../../packages/client-core
       '@expense-tracker/db-offline':
         specifier: workspace:*
         version: link:../../packages/db-offline
@@ -259,6 +262,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@expense-tracker/client-core':
+        specifier: workspace:*
+        version: link:../../packages/client-core
       '@expense-tracker/db-offline':
         specifier: workspace:*
         version: link:../../packages/db-offline
@@ -280,6 +286,9 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -302,6 +311,31 @@ importers:
       postcss:
         specifier: ^8.5.19
         version: 8.5.19
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+
+  packages/client-core:
+    dependencies:
+      '@expense-tracker/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@expense-tracker/services':
+        specifier: workspace:*
+        version: link:../services
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.1(jiti@2.7.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -458,6 +492,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@expense-tracker/client-core':
+        specifier: workspace:*
+        version: link:../client-core
       '@expense-tracker/logger':
         specifier: workspace:*
         version: link:../logger

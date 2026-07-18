@@ -83,7 +83,9 @@ curl -X POST "$API/api/auth/refresh" \
 ```
 
 Replace both locally stored tokens after every successful refresh. The old
-refresh token is revoked.
+refresh token is revoked atomically with creation of its replacement. The
+response also returns `data.user`, allowing a client to restore non-sensitive
+session profile data after an application restart.
 
 Logout:
 

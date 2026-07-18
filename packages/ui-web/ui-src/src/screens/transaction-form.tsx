@@ -15,7 +15,7 @@ import { Label } from "#components/ui/label";
 import type {
   Account,
   Category,
-  ExpenseApi,
+  ExpenseDataClient,
   Transaction,
   TransactionInput,
 } from "../api";
@@ -34,7 +34,7 @@ export function TransactionForm({
   transaction: Transaction | null;
   accounts: Account[];
   categories: Category[];
-  api: ExpenseApi;
+  api: ExpenseDataClient;
   onOpenChange: (open: boolean) => void;
   onSaved: () => Promise<void>;
 }) {

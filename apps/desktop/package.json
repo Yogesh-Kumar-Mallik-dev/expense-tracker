@@ -14,6 +14,7 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@expense-tracker/client-core": "workspace:*",
     "@expense-tracker/db-offline": "workspace:*",
     "@expense-tracker/logger": "workspace:*",
     "@expense-tracker/services": "workspace:*",

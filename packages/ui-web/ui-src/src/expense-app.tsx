@@ -1,22 +1,27 @@
 "use client";
 
 import React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClientLogger } from "@expense-tracker/logger/browser";
-import { ExpenseApi, type Session } from "./api";
+import type {
+  AuthState,
+  ExpenseApplication,
+} from "@expense-tracker/client-core";
 import { AppShell } from "./shell";
 import { LoginScreen } from "./screens/login-screen";
 
 export function ExpenseApp({
-  apiBaseUrl = "http://localhost:3001",
+  application,
   platform = "web",
   initialAuthMode = "login",
 }: {
-  apiBaseUrl?: string;
+  application: ExpenseApplication;
   platform?: "web" | "desktop";
   initialAuthMode?: "login" | "signup";
 }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [auth, setAuth] = useState<AuthState>(() =>
+    application.session.state(),
+  );
   const observability = useMemo(
     () =>
       createClientLogger({
@@ -27,45 +32,47 @@ export function ExpenseApp({
       }),
     [platform],
   );
-  const api = useMemo(
-    () => new ExpenseApi(apiBaseUrl, () => session?.tokens.accessToken ?? null),
-    [apiBaseUrl, session],
-  );
+  useEffect(() => {
+    const unsubscribe = application.session.subscribe(setAuth);
+    void application.session.restore();
+    return unsubscribe;
+  }, [application]);
 
-  if (!session)
+  if (auth.status === "restoring")
+    return <main className="auth-layout">Restoring your session…</main>;
+
+  if (auth.status === "anonymous")
     return (
       <LoginScreen
-        api={api}
+        session={application.session}
         initialMode={initialAuthMode}
-        onLogin={(nextSession) => {
+        onLogin={() => {
           observability.logger.success({
             operation: "authentication",
             message: "Authenticated session established",
             fields: { platform },
           });
-          setSession(nextSession);
         }}
       />
     );
 
   const logout = async () => {
     try {
-      await api.logout(session.tokens.refreshToken);
+      await application.session.logout();
     } finally {
       observability.logger.info({
         operation: "authentication",
         message: "Local authenticated session cleared",
       });
-      setSession(null);
     }
   };
 
   return (
     <AppShell
-      api={api}
-      session={session}
+      api={application.data}
+      session={auth.session}
       platform={platform}
-      onUnauthorized={() => setSession(null)}
+      onUnauthorized={() => void application.session.refresh().catch(() => {})}
       onLogout={logout}
       diagnostics={observability.diagnostics}
     />

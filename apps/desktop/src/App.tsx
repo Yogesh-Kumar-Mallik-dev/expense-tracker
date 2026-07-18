@@ -1,9 +1,12 @@
 import { ExpenseApp } from "@expense-tracker/ui-web";
+import { useMemo } from "react";
+import { createDesktopApplication } from "./application";
 
 export function App() {
+  const application = useMemo(createDesktopApplication, []);
   return (
     <ExpenseApp
-      apiBaseUrl={import.meta.env.VITE_API_URL ?? "http://localhost:3001"}
+      application={application}
       platform="desktop"
     />
   );

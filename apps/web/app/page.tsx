@@ -1,5 +1,5 @@
-import { ExpenseApp } from "@expense-tracker/ui-web";
+import { ClientApp } from "./client-app";
 
 export default function Home() {
-  return <ExpenseApp apiBaseUrl="/backend" platform="web" />;
+  return <ClientApp />;
 }
