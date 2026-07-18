@@ -443,6 +443,12 @@ export class MainTransactionAdapter implements TransactionRepositoryPort {
       },
     });
   }
+  async restore(id: string, u: string, updatedAt: string) {
+    await this.db.transaction.updateMany({
+      where: { id, userId: u, deletedAt: { not: null } },
+      data: { deletedAt: null, updatedAt: new Date(updatedAt) },
+    });
+  }
   async delete(id: string, u: string) {
     await this.db.transaction.updateMany({
       where: { id, userId: u, deletedAt: null },

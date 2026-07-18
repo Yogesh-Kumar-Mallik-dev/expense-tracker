@@ -32,4 +32,8 @@ export class TransactionRepository {
   delete(id: string, userId: string) {
     return this.db.update(transactions).set({ deletedAt: new Date().toISOString() }).where(and(eq(transactions.id, id), eq(transactions.userId, userId), isNull(transactions.deletedAt)));
   }
+
+  restore(id: string, userId: string, updatedAt: string) {
+    return this.db.update(transactions).set({ deletedAt: null, updatedAt }).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+  }
 }

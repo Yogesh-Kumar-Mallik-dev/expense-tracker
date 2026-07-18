@@ -66,6 +66,9 @@ export function TransactionsScreen({
   const [referenceError, setReferenceError] = useState("");
   const [editing, setEditing] = useState<Transaction | "new" | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState<Transaction | null>(
+    null,
+  );
   const setOptionalFilter = (
     key: "accountId" | "categoryId" | "from" | "to",
     value: string,
@@ -170,6 +173,7 @@ export function TransactionsScreen({
     setError("");
     try {
       await api.deleteTransaction(transaction.id);
+      setRecentlyDeleted(transaction);
       await loadTransactions(undefined, true);
     } catch (caught) {
       setError(
@@ -243,6 +247,35 @@ export function TransactionsScreen({
               onClick={() => void loadTransactions()}
             >
               Try again
+            </button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {recentlyDeleted ? (
+        <Alert>
+          <AlertTitle>Transaction deleted</AlertTitle>
+          <AlertDescription>
+            {recentlyDeleted.description || "Transaction"} was removed.{" "}
+            <button
+              className="inline-action"
+              type="button"
+              onClick={() =>
+                void api
+                  .restoreTransaction(recentlyDeleted.id)
+                  .then(async () => {
+                    setRecentlyDeleted(null);
+                    await loadTransactions(undefined, true);
+                  })
+                  .catch((caught) =>
+                    setError(
+                      caught instanceof Error
+                        ? caught.message
+                        : "Transaction could not be restored.",
+                    ),
+                  )
+              }
+            >
+              Undo
             </button>
           </AlertDescription>
         </Alert>

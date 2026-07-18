@@ -17,4 +17,19 @@ model User {
   syncStates    SyncState[]
   tags          Tag[]
   transactions  Transaction[]
+  emailChangeTokens EmailChangeToken[]
+}
+
+model EmailChangeToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

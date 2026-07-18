@@ -34,7 +34,8 @@ Current route screens are:
 - Budgets: create/edit/delete, category assignment, spending-limit usage,
   envelope allocation, and envelope transfers.
 - Reports: an honest unavailable state pending reporting endpoints.
-- Synchronization: an honest unavailable state pending PowerSync status wiring.
+- Synchronization: live connection, transfer, last-sync, attachment-queue, and
+  failure state from the platform runtime.
 - Settings: profile defaults, registered devices, diagnostics, and sign-out.
 - Overview: workflow shortcuts without invented metrics.
 
@@ -44,15 +45,12 @@ validated session envelope as login and opens the application immediately.
 
 ## Remaining workflow dependencies
 
-- Transaction deletion cannot offer undo until the transaction service exposes
-  an owned restore command for tombstoned records.
-- Budget-mode conversion remains hidden because the current server conversion
-  command does not accept confirmed target values or guarantee a single
-  authoritative database transaction.
-- Attachment retries survive recoverable errors while the form remains open.
-  Restart-safe pending uploads require the Phase 3 local upload queue.
-- Email editing remains unavailable until an email-verification contract
-  exists.
+- Transaction deletion offers undo through an owned tombstone-restore command.
+- Budget-mode conversion accepts confirmed values, checks the source version,
+  copies assignments, and commits in one authoritative transaction.
+- Attachment bytes and retry metadata survive restart in local-only storage.
+- Email changes use a time-limited verification token. Production delivery
+  requires `RESEND_API_KEY`, `EMAIL_FROM`, and `WEB_APP_URL`.
 
 See `frontend-design.md` for research sources, accessibility requirements, and
 missing service dependencies.

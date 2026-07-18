@@ -23,3 +23,31 @@ export const attachments = sqliteTable(
 
 export type Attachment = typeof attachments.$inferSelect;
 export type NewAttachment = typeof attachments.$inferInsert;
+
+export const pendingAttachmentUploads = sqliteTable(
+  "PendingAttachmentUpload",
+  {
+    id: text("id").primaryKey().notNull(),
+    userId: text("userId").notNull(),
+    attachmentId: text("attachmentId").notNull().unique(),
+    transactionId: text("transactionId").notNull(),
+    localUri: text("localUri").notNull(),
+    fileName: text("fileName").notNull(),
+    mimeType: text("mimeType").notNull(),
+    sizeBytes: integer("sizeBytes").notNull(),
+    status: text("status").notNull().default("PENDING"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("lastError"),
+    createdAt: text("createdAt").notNull(),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("PendingAttachmentUpload_userId_status_idx").on(
+      table.userId,
+      table.status,
+    ),
+  ],
+);
+
+export type PendingAttachmentUpload =
+  typeof pendingAttachmentUploads.$inferSelect;

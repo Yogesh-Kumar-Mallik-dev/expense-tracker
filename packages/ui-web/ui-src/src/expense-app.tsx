@@ -86,6 +86,8 @@ export function ExpenseApp({
       onUnauthorized={() => void application.session.refresh().catch(() => {})}
       onLogout={logout}
       diagnostics={observability.diagnostics}
+      sync={application.sync}
+      localDatabase={application.localDatabase}
     />
   );
 }

@@ -58,6 +58,7 @@ export interface ExpenseDataClient {
   createTransaction(value: TransactionInput): Promise<Result<Transaction>>;
   updateTransaction(id: string, value: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
+  restoreTransaction(id: string): Promise<Result<Transaction>>;
   transactionTags(transactionId: string): Promise<Result<TransactionTag[]>>;
   addTransactionTag(transactionId: string, tagId: string): Promise<void>;
   removeTransactionTag(transactionId: string, tagId: string): Promise<void>;
@@ -65,6 +66,7 @@ export interface ExpenseDataClient {
   uploadAttachment(
     transactionId: string,
     file: Blob & { name: string; type: string },
+    attachmentId?: string,
   ): Promise<Result<Attachment>>;
   deleteAttachment(id: string): Promise<void>;
   attachmentDownload(
@@ -83,6 +85,15 @@ export interface ExpenseDataClient {
   createBudget(value: BudgetInput): Promise<Result<Budget>>;
   updateBudget(id: string, value: Partial<BudgetInput>): Promise<void>;
   deleteBudget(id: string): Promise<void>;
+  convertBudget(
+    id: string,
+    value: {
+      targetName: string;
+      targetAmount: string;
+      targetRolloverPolicy: Budget["rolloverPolicy"];
+      expectedSourceUpdatedAt: string;
+    },
+  ): Promise<void>;
   assignBudgetCategory(budgetId: string, categoryId: string): Promise<void>;
   removeBudgetCategory(budgetId: string, categoryId: string): Promise<void>;
   budgetCategories(budgetId: string): Promise<Result<BudgetCategory[]>>;
@@ -115,6 +126,14 @@ export interface ExpenseDataClient {
     currency?: string;
   }): Promise<void>;
   deleteProfile(): Promise<void>;
+  requestEmailChange(
+    email: string,
+  ): Promise<
+    Result<{
+      delivery: "email" | "development";
+      developmentVerificationUrl?: string | undefined;
+    }>
+  >;
 }
 
 export type AuthState =
@@ -135,6 +154,21 @@ export interface SessionController {
 
 export interface SyncController {
   disconnect(): Promise<void>;
+  state?(): ApplicationSyncState;
+  subscribe?(listener: (state: ApplicationSyncState) => void): () => void;
+}
+
+export interface ApplicationSyncState {
+  status:
+    | "offline"
+    | "connecting"
+    | "synchronizing"
+    | "synchronized"
+    | "failed"
+    | "not-configured";
+  lastSyncedAt: string | null;
+  pendingWrites: number | null;
+  error: string | null;
 }
 
 export class DisconnectedSyncController implements SyncController {

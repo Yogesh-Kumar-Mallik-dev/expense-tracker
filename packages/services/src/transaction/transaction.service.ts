@@ -85,6 +85,13 @@ export class TransactionService {
   async delete(id: string, userId: string) {
     await this.repository.delete(zUuid(id), zUuid(userId));
   }
+
+  async restore(id: string, userId: string) {
+    await this.repository.restore(zUuid(id), zUuid(userId), this.clock());
+    const restored = await this.repository.findById(zUuid(id), zUuid(userId));
+    if (!restored) throw new Error("Transaction could not be restored");
+    return restored;
+  }
 }
 
 // Concurrency note: N/A - pure validation with no database access.

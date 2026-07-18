@@ -1,11 +1,19 @@
 import type { AbstractPowerSyncDatabase } from "@powersync/common";
 import { DrizzleAppSchema, wrapPowerSyncWithDrizzle } from "@powersync/drizzle-driver";
-import { drizzleSchema, refreshTokens } from "./schema";
+import {
+  drizzleSchema,
+  pendingAttachmentUploads,
+  syncConflicts,
+} from "./schema";
 
 export const powerSyncSchema = new DrizzleAppSchema({
   ...drizzleSchema,
-  refreshTokens: {
-    tableDefinition: refreshTokens,
+  pendingAttachmentUploads: {
+    tableDefinition: pendingAttachmentUploads,
+    options: { localOnly: true },
+  },
+  syncConflicts: {
+    tableDefinition: syncConflicts,
     options: { localOnly: true },
   },
 });

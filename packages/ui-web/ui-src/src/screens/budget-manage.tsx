@@ -36,6 +36,8 @@ export function BudgetManage({
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [targetName, setTargetName] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
   useEffect(() => {
     if (!budget || !open) return;
     void api
@@ -52,6 +54,10 @@ export function BudgetManage({
             : "Assignments could not be loaded.",
         ),
       );
+    setTargetName(
+      `${budget.name} (${budget.mode === "ENVELOPE" ? "Limit" : "Envelope"})`,
+    );
+    setTargetAmount(budget.amount);
   }, [api, budget, open]);
   if (!budget) return null;
   const toggle = async (id: string, checked: boolean) => {
@@ -127,6 +133,30 @@ export function BudgetManage({
   const assignedOptions = categories
     .filter((category) => assigned.includes(category.id))
     .map((category) => ({ value: category.id, label: category.name }));
+  const convert = async () => {
+    if (!window.confirm(`Create ${targetName} and archive ${budget.name}?`))
+      return;
+    setPending(true);
+    setError("");
+    try {
+      await api.convertBudget(budget.id, {
+        targetName,
+        targetAmount,
+        targetRolloverPolicy: budget.rolloverPolicy,
+        expectedSourceUpdatedAt: budget.updatedAt,
+      });
+      await onChanged();
+      onOpenChange(false);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Budget could not be converted.",
+      );
+    } finally {
+      setPending(false);
+    }
+  };
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <DialogContent className="transaction-dialog">
@@ -220,6 +250,43 @@ export function BudgetManage({
             </form>
           </div>
         ) : null}
+        <section className="settings-action">
+          <div>
+            <h3>Convert budget mode</h3>
+            <p>
+              Creates a replacement in the other mode, copies category
+              assignments, and archives this budget in one server transaction.
+            </p>
+          </div>
+          <div className="form-stack">
+            <div className="field">
+              <Label htmlFor="conversion-name">Replacement name</Label>
+              <Input
+                id="conversion-name"
+                value={targetName}
+                onChange={(event) => setTargetName(event.target.value)}
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="conversion-amount">Replacement amount</Label>
+              <Input
+                id="conversion-amount"
+                inputMode="decimal"
+                value={targetAmount}
+                onChange={(event) => setTargetAmount(event.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending || !targetName || !targetAmount}
+              onClick={() => void convert()}
+            >
+              Convert to{" "}
+              {budget.mode === "ENVELOPE" ? "spending limit" : "envelope"}
+            </Button>
+          </div>
+        </section>
         {error ? (
           <Alert variant="destructive" role="alert">
             <AlertDescription>{error}</AlertDescription>

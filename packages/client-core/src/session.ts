@@ -1,4 +1,8 @@
-import { sessionSchema, type RegistrationInput, type Session } from "./contracts";
+import {
+  sessionSchema,
+  type RegistrationInput,
+  type Session,
+} from "./contracts";
 import { ResponseValidationError } from "./errors";
 import type {
   AuthState,
@@ -17,7 +21,10 @@ export interface AuthenticationTransport {
   login(email: string, password: string): Promise<Session>;
   register(input: RegistrationInput): Promise<Session>;
   refresh(refreshToken: string | null): Promise<Session>;
-  logout(accessToken: string | null, refreshToken: string | null): Promise<void>;
+  logout(
+    accessToken: string | null,
+    refreshToken: string | null,
+  ): Promise<void>;
 }
 
 export interface SessionControllerOptions {
@@ -35,6 +42,7 @@ export class ApplicationSessionController implements SessionController {
   private readonly listeners = new Set<(state: AuthState) => void>();
   private refreshPromise: Promise<Session> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeDatabaseUserId: string | null = null;
   private readonly now: () => number;
 
   constructor(private readonly options: SessionControllerOptions) {
@@ -55,7 +63,9 @@ export class ApplicationSessionController implements SessionController {
     if (this.current.status === "authenticated") return this.current;
     const refreshToken = await this.options.credentials?.read();
     try {
-      const session = await this.options.transport.refresh(refreshToken ?? null);
+      const session = await this.options.transport.refresh(
+        refreshToken ?? null,
+      );
       await this.accept(session);
     } catch {
       await this.clear();
@@ -97,6 +107,7 @@ export class ApplicationSessionController implements SessionController {
       await this.options.transport.logout(accessToken, refreshToken ?? null);
     } finally {
       await this.options.localDatabase?.close();
+      this.activeDatabaseUserId = null;
       await this.clear();
     }
   }
@@ -104,12 +115,15 @@ export class ApplicationSessionController implements SessionController {
   private async performRefresh() {
     const refreshToken = await this.options.credentials?.read();
     try {
-      const session = await this.options.transport.refresh(refreshToken ?? null);
+      const session = await this.options.transport.refresh(
+        refreshToken ?? null,
+      );
       await this.accept(session);
       return session;
     } catch (error) {
       await this.options.sync?.disconnect();
       await this.options.localDatabase?.close();
+      this.activeDatabaseUserId = null;
       await this.clear();
       throw error;
     }
@@ -125,9 +139,17 @@ export class ApplicationSessionController implements SessionController {
     const session = parsed.data;
     if (session.tokens.refreshToken)
       await this.options.credentials?.write(session.tokens.refreshToken);
-    await this.options.localDatabase?.open(session.user.id);
-    await this.options.registerDevice?.(session);
     this.set({ status: "authenticated", session });
+    try {
+      if (this.activeDatabaseUserId !== session.user.id) {
+        await this.options.localDatabase?.open(session.user.id);
+        this.activeDatabaseUserId = session.user.id;
+      }
+      await this.options.registerDevice?.(session);
+    } catch (error) {
+      await this.clear();
+      throw error;
+    }
     this.scheduleRefresh(session);
   }
 
@@ -135,10 +157,12 @@ export class ApplicationSessionController implements SessionController {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     const delay = Math.max(
       1_000,
-      session.tokens.expiresIn * 1_000 -
-        (this.options.refreshSkewMs ?? 60_000),
+      session.tokens.expiresIn * 1_000 - (this.options.refreshSkewMs ?? 60_000),
     );
-    this.refreshTimer = setTimeout(() => void this.refresh().catch(() => {}), delay);
+    this.refreshTimer = setTimeout(
+      () => void this.refresh().catch(() => {}),
+      delay,
+    );
     (
       this.refreshTimer as ReturnType<typeof setTimeout> & {
         unref?: () => void;

@@ -4,7 +4,6 @@ export * from "./budget";
 export * from "./budgetCategory";
 export * from "./category";
 export * from "./device";
-export * from "./refreshToken";
 export * from "./sync";
 export * from "./tag";
 export * from "./transaction";

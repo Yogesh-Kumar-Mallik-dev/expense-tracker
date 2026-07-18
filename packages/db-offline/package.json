@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./driver/web": {
       "types": "./dist/driver/web.d.ts",
+      "development": "./src/driver/web.ts",
       "default": "./dist/driver/web.js"
     },
     "./driver/mobile": {
@@ -20,6 +22,7 @@
     },
     "./driver/desktop": {
       "types": "./dist/driver/desktop.d.ts",
+      "development": "./src/driver/desktop.ts",
       "default": "./dist/driver/desktop.js"
     },
     "./adapters/services": {

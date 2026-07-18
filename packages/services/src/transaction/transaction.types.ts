@@ -68,4 +68,5 @@ export interface TransactionRepositoryPort {
     value: UpdateTransactionInput & { updatedAt: string },
   ): Promise<unknown>;
   delete(id: string, userId: string): Promise<unknown>;
+  restore(id: string, userId: string, updatedAt: string): Promise<unknown>;
 }

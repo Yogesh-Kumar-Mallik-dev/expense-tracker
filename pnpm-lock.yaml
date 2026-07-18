@@ -317,6 +317,9 @@ importers:
 
   packages/client-core:
     dependencies:
+      '@expense-tracker/db-offline':
+        specifier: workspace:*
+        version: link:../db-offline
       '@expense-tracker/logger':
         specifier: workspace:*
         version: link:../logger

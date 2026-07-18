@@ -229,6 +229,9 @@ Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
 | Variable                       | Purpose                                             |
 | ------------------------------ | --------------------------------------------------- |
 | `DATABASE_URL`                 | PostgreSQL connection used by Prisma                |
+| `WEB_APP_URL`                  | Public web origin used in email verification links  |
+| `RESEND_API_KEY`               | Resend API key; required for email delivery in production |
+| `EMAIL_FROM`                   | Verified sender used for email-change messages      |
 | `ACCESS_TOKEN_SECRET`          | Access-token signing secret, at least 32 characters |
 | `REFRESH_TOKEN_SECRET`         | Refresh-token signing secret                        |
 | `POWERSYNC_URL`                | PowerSync service endpoint                          |

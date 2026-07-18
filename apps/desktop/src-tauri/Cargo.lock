@@ -1228,12 +1228,19 @@ dependencies = [
 name = "expense-tracker-desktop"
 version = "1.0.0"
 dependencies = [
+ "async-trait",
+ "chrono",
+ "futures-lite 2.6.1",
  "keyring",
+ "powersync",
+ "reqwest",
+ "rusqlite",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-powersync",
+ "uuid",
 ]
 
 [[package]]

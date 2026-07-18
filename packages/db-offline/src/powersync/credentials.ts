@@ -22,11 +22,17 @@ export function createHttpCredentialsProvider(
       throw new Error(`Unable to fetch PowerSync credentials (${response.status})`);
     }
 
-    const value = (await response.json()) as {
+    const payload = (await response.json()) as {
+      data?: {
+        endpoint: string;
+        token: string;
+        expiresAt?: string;
+      };
       endpoint: string;
       token: string;
       expiresAt?: string;
     };
+    const value = payload.data ?? payload;
 
     return {
       endpoint: value.endpoint,

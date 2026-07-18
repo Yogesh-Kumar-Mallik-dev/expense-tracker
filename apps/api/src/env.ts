@@ -19,6 +19,9 @@ const schema = z.object({
   ATTACHMENT_ACCESS_KEY_ID: z.string().min(1).optional(),
   ATTACHMENT_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   ATTACHMENT_MAX_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(3).optional(),
+  WEB_APP_URL: z.url().default("http://localhost:3000"),
 });
 
 export function env() {

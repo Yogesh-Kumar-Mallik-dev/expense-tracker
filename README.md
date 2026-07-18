@@ -4,24 +4,24 @@ A cross-platform expense tracker whose target architecture is offline-first,
 built as a **Turborepo** monorepo.
 
 The project consists of a single backend and three frontend hosts. Shared
-services, SQLite drivers, and PowerSync integration exist, but the platform
-composition required for restart-safe offline product behavior is still being
-connected.
+services, SQLite drivers, and PowerSync integration are composed into
+restart-safe web and desktop runtimes. Mobile remains a scaffold.
 
 ## Capability status
 
 | Capability | API | Web | Desktop | Mobile |
 | --- | --- | --- | --- | --- |
 | Authentication | Implemented | HttpOnly refresh cookie | OS-vault refresh credential | Planned |
-| Transaction CRUD | Implemented | Online REST | Online REST | Planned |
-| Local SQLite | Package implemented | Not connected | Not connected | Not connected |
-| PowerSync | Upload/download infrastructure | Not connected | Plugin only | Not connected |
-| Offline restart | Infrastructure only | Not delivered | Not delivered | Not delivered |
+| Transaction CRUD | Implemented | Local-first | Local-first | Planned |
+| Local SQLite | Package implemented | Per-user WASQLite connected | Per-user native SQLite connected | Not connected |
+| PowerSync | Upload/download infrastructure | Connected when configured | Rust connector connected when configured | Not connected |
+| Offline restart | N/A | Local data and upload queue | Local data and upload queue | Not delivered |
 | Attachments | API implemented | Upload/download/delete | Upload/download/delete | Planned |
 | Budget limits | API/service implemented | CRUD and category assignment | CRUD and category assignment | Planned |
-| Envelope mode | Sync surfaces implemented; recovery integration pending | Allocation and transfers | Allocation and transfers | Planned |
+| Envelope mode | Sync and conflict contracts implemented | Allocation and transfers | Allocation and transfers | Planned |
 | Accounts/categories/tags | Implemented | CRUD/archive workflows | CRUD/archive workflows | Planned |
 | Profile/devices | Implemented | Edit/list/remove | Edit/list/remove | Planned |
+| Email change | Verified token workflow | Implemented | Web verification link | Planned |
 
 ---
 

@@ -48,13 +48,14 @@ SQLite representations differ where necessary:
 - Decimal money is text to avoid floating-point precision loss.
 - Booleans use integer columns with Drizzle boolean mapping.
 - `User.passwordHash` is never stored offline.
-- `RefreshToken` is marked as a PowerSync local-only table.
+- Refresh credentials are intentionally absent from SQLite. Web uses an
+  HttpOnly cookie and native clients use their platform credential vault.
 
 Every synchronized table includes a `deletedAt` tombstone. Repository reads hide
 tombstones and repository delete methods update that field instead of issuing
 SQLite `DELETE` statements. Required foreign keys are restrictive rather than
-cascading. Refresh-token expiry cleanup is the only hard delete because that
-table is local-only.
+cascading. `SyncConflict` and `PendingAttachmentUpload` are local-only
+operational tables and may hard-delete resolved or completed rows.
 
 The PowerSync client schema is generated from the Drizzle tables using
 `DrizzleAppSchema`, keeping one client-side schema definition.

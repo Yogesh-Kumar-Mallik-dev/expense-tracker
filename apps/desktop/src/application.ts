@@ -1,13 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
   ApplicationSessionController,
-  DeferredLocalDatabaseLifecycle,
-  DisconnectedSyncController,
+  OfflineExpenseClient,
   RestAuthenticationTransport,
   RestExpenseClient,
   type ExpenseApplication,
   type SessionCredentialStore,
 } from "@expense-tracker/client-core";
+import { DesktopOfflineRuntime } from "./offline";
 
 const DEVICE_KEY = "expense-tracker.desktop-device-id";
 
@@ -24,14 +24,17 @@ class DesktopCredentialStore implements SessionCredentialStore {
 }
 
 export function createDesktopApplication(): ExpenseApplication {
-  const database = new DeferredLocalDatabaseLifecycle();
-  const sync = new DisconnectedSyncController();
+  const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
   const references: {
     data?: RestExpenseClient;
     session?: ApplicationSessionController;
   } = {};
+  const runtime = new DesktopOfflineRuntime(() => {
+    if (!references.session) throw new Error("Session is not initialized");
+    return references.session;
+  }, apiUrl);
   const authentication = new RestAuthenticationTransport(
-    import.meta.env.VITE_API_URL ?? "http://localhost:3001",
+    apiUrl,
     "direct",
     async () => localStorage.getItem(DEVICE_KEY),
     () => {
@@ -42,8 +45,8 @@ export function createDesktopApplication(): ExpenseApplication {
   const session = new ApplicationSessionController({
     transport: authentication,
     credentials: new DesktopCredentialStore(),
-    localDatabase: database,
-    sync,
+    localDatabase: runtime,
+    sync: runtime,
     registerDevice: async () => {
       if (localStorage.getItem(DEVICE_KEY)) return;
       if (!references.data) return;
@@ -55,10 +58,40 @@ export function createDesktopApplication(): ExpenseApplication {
     },
   });
   references.session = session;
-  const data = new RestExpenseClient(
-    import.meta.env.VITE_API_URL ?? "http://localhost:3001",
-    session,
+  const remote = new RestExpenseClient(apiUrl, session);
+  references.data = remote;
+  runtime.setRemote(remote);
+  const data = new OfflineExpenseClient(
+    () => runtime.services(),
+    () => {
+      const state = session.state();
+      if (state.status !== "authenticated")
+        throw new Error("No authenticated user");
+      return state.session.user.id;
+    },
+    remote,
+    {
+      upload: async (transactionId, file) => {
+        const attachmentId = await runtime
+          .attachments()
+          .enqueue(transactionId, file);
+        const state = session.state();
+        return {
+          data: {
+            id: attachmentId,
+            userId:
+              state.status === "authenticated" ? state.session.user.id : "",
+            transactionId,
+            fileName: file.name,
+            storageKey: `pending:${attachmentId}`,
+            mimeType: file.type || "application/octet-stream",
+            sizeBytes: file.size,
+            createdAt: new Date().toISOString(),
+            deletedAt: null,
+          },
+        };
+      },
+    },
   );
-  references.data = data;
-  return { session, data, sync, localDatabase: database };
+  return { session, data, sync: runtime, localDatabase: runtime };
 }

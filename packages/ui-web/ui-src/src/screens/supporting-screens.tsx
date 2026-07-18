@@ -9,6 +9,11 @@ import {
 import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import type { BrowserDiagnosticsTransport } from "@expense-tracker/logger/browser";
+import type {
+  ApplicationSyncState,
+  LocalDatabaseLifecycle,
+  SyncController,
+} from "@expense-tracker/client-core";
 import { Alert, AlertDescription, AlertTitle } from "#components/ui/alert";
 import { Button } from "#components/ui/button";
 import { Input } from "#components/ui/input";
@@ -507,13 +512,69 @@ export function ReportsScreen() {
     />
   );
 }
-export function SyncScreen() {
+export function SyncScreen({ sync }: { sync: SyncController }) {
+  const [state, setState] = useState<ApplicationSyncState>(
+    () =>
+      sync.state?.() ?? {
+        status: "not-configured",
+        lastSyncedAt: null,
+        pendingWrites: null,
+        error: null,
+      },
+  );
+  useEffect(() => sync.subscribe?.(setState), [sync]);
   return (
-    <UnavailableScreen
-      eyebrow="Local-first dependency"
-      title="Synchronization"
-      description="Unavailable until the application bootstrap exposes PowerSync connection state, pending writes, last successful sync, upload failures, and permanent conflicts. No connection or sync status is inferred from loaded data."
-    />
+    <section
+      className="route-screen narrow-screen"
+      aria-labelledby="synchronization-title"
+    >
+      <header className="route-header">
+        <div>
+          <p className="eyebrow">Local-first runtime</p>
+          <h1 id="synchronization-title">Synchronization</h1>
+          <p>
+            Local data remains available when the API or PowerSync service
+            cannot be reached.
+          </p>
+        </div>
+      </header>
+      <dl className="settings-list">
+        <div>
+          <dt>Status</dt>
+          <dd>{state.status.replace("-", " ")}</dd>
+        </div>
+        <div>
+          <dt>Last synchronized</dt>
+          <dd>
+            {state.lastSyncedAt
+              ? new Intl.DateTimeFormat(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(new Date(state.lastSyncedAt))
+              : "Not yet synchronized"}
+          </dd>
+        </div>
+        <div>
+          <dt>Pending attachment uploads</dt>
+          <dd>{state.pendingWrites ?? "Queue count unavailable"}</dd>
+        </div>
+      </dl>
+      {state.error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Synchronization failed</AlertTitle>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      ) : null}
+      {state.status === "not-configured" ? (
+        <Alert>
+          <AlertTitle>PowerSync is not configured</AlertTitle>
+          <AlertDescription>
+            Local SQLite remains usable. Configure the PowerSync URL and signing
+            key to synchronize devices.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+    </section>
   );
 }
 export function SettingsScreen({
@@ -521,14 +582,17 @@ export function SettingsScreen({
   api,
   onLogout,
   diagnostics,
+  localDatabase,
 }: {
   session: Session;
   api: ExpenseDataClient;
   onLogout: () => Promise<void>;
   diagnostics: BrowserDiagnosticsTransport;
+  localDatabase: LocalDatabaseLifecycle;
 }) {
   const [name, setName] = useState(session.user.name ?? "");
   const [currency, setCurrency] = useState(session.user.currency);
+  const [email, setEmail] = useState(session.user.email);
   const [devices, setDevices] = useState<Device[]>([]);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -557,6 +621,34 @@ export function SettingsScreen({
         caught instanceof Error
           ? caught.message
           : "Profile could not be saved.",
+      );
+    } finally {
+      setPending(false);
+    }
+  };
+  const verifyEmail = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return setMessage("Enter a valid email address.");
+    setPending(true);
+    setMessage("");
+    try {
+      const result = await api.requestEmailChange(email);
+      setMessage(
+        result.data.delivery === "email"
+          ? "Verification email sent."
+          : "Development verification link is ready.",
+      );
+      if (result.data.developmentVerificationUrl)
+        window.open(
+          result.data.developmentVerificationUrl,
+          "_blank",
+          "noopener,noreferrer",
+        );
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Verification could not be started.",
       );
     } finally {
       setPending(false);
@@ -592,8 +684,8 @@ export function SettingsScreen({
         <div>
           <strong id="profile-edit-title">Profile</strong>
           <p>
-            Email changes require an email-verification workflow and are not
-            available.
+            Email changes require a time-limited verification link and revoke
+            existing refresh sessions after confirmation.
           </p>
         </div>
         <div className="form-stack">
@@ -605,6 +697,18 @@ export function SettingsScreen({
               onChange={(event) => setName(event.target.value)}
               maxLength={120}
             />
+          </div>
+          <div className="field">
+            <Label htmlFor="profile-email">Email</Label>
+            <Input
+              id="profile-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+            <small>
+              Your address changes only after you open the verification link.
+            </small>
           </div>
           <div className="field">
             <Label htmlFor="profile-currency">Default currency</Label>
@@ -621,6 +725,14 @@ export function SettingsScreen({
             onClick={() => void saveProfile()}
           >
             {pending ? "Saving…" : "Save profile"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || email === session.user.email}
+            onClick={() => void verifyEmail()}
+          >
+            Verify new email
           </Button>
           {message ? <p role="status">{message}</p> : null}
         </div>
@@ -694,10 +806,7 @@ export function SettingsScreen({
       >
         <div>
           <strong id="delete-account-title">Delete account</strong>
-          <p>
-            This tombstones the account and prevents future sign-in. Local
-            downloaded data removal is part of the offline composition phase.
-          </p>
+          <p>This tombstones the account and prevents future sign-in.</p>
         </div>
         <Button
           variant="outline"
@@ -722,6 +831,39 @@ export function SettingsScreen({
           }}
         >
           Delete account
+        </Button>
+      </section>
+      <section className="settings-action" aria-labelledby="remove-local-title">
+        <div>
+          <strong id="remove-local-title">Remove downloaded data</strong>
+          <p>
+            Disconnects synchronization and clears this user’s local SQLite data
+            from this device. Server records are not deleted.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => {
+            if (
+              !window.confirm(
+                "Remove downloaded data from this device and sign out?",
+              )
+            )
+              return;
+            void localDatabase
+              .remove(session.user.id)
+              .then(onLogout)
+              .catch((caught) =>
+                setMessage(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Local data could not be removed.",
+                ),
+              );
+          }}
+        >
+          Remove local data
         </Button>
       </section>
     </section>

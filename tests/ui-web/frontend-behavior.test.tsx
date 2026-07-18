@@ -290,11 +290,23 @@ test("synchronization screen never fabricates online or synced state", async () 
   const { render, screen } = await import("@testing-library/react");
   const { SyncScreen } =
     await import("../../packages/ui-web/ui-src/src/screens/supporting-screens");
-  render(<SyncScreen />);
+  render(
+    <SyncScreen
+      sync={{
+        disconnect: async () => {},
+        state: () => ({
+          status: "not-configured",
+          lastSyncedAt: null,
+          pendingWrites: null,
+          error: null,
+        }),
+      }}
+    />,
+  );
   assert.ok(screen.getByRole("heading", { name: "Synchronization" }));
   assert.match(
-    screen.getByText(/Unavailable until/).textContent ?? "",
-    /PowerSync connection state/,
+    screen.getByText(/Local SQLite remains usable/).textContent ?? "",
+    /PowerSync URL/,
   );
   assert.equal(screen.queryByText("Synced"), null);
   assert.equal(screen.queryByText("Connected"), null);

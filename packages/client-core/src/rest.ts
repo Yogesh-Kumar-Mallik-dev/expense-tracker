@@ -152,6 +152,11 @@ export class RestExpenseClient implements ExpenseDataClient {
   deleteTransaction(id: string) {
     return this.requestEmpty(`/api/transactions/${id}`, { method: "DELETE" });
   }
+  restoreTransaction(id: string) {
+    return this.request(`/api/transactions/${id}/restore`, transactionSchema, {
+      method: "POST",
+    });
+  }
   transactionTags(transactionId: string) {
     return this.collection(
       `/api/transactions/${transactionId}/tags?page=1&pageSize=100`,
@@ -179,6 +184,7 @@ export class RestExpenseClient implements ExpenseDataClient {
   async uploadAttachment(
     transactionId: string,
     file: Blob & { name: string; type: string },
+    attachmentId?: string,
   ) {
     const upload = await this.request(
       "/api/attachments/upload",
@@ -193,6 +199,7 @@ export class RestExpenseClient implements ExpenseDataClient {
         method: "POST",
         body: JSON.stringify({
           transactionId,
+          ...(attachmentId ? { attachmentId } : {}),
           fileName: file.name,
           mimeType: file.type || "application/octet-stream",
           sizeBytes: file.size,
@@ -258,6 +265,20 @@ export class RestExpenseClient implements ExpenseDataClient {
   }
   deleteBudget(id: string) {
     return this.requestEmpty(`/api/budgets/${id}`, { method: "DELETE" });
+  }
+  convertBudget(
+    id: string,
+    value: {
+      targetName: string;
+      targetAmount: string;
+      targetRolloverPolicy: "NONE" | "POSITIVE_ONLY" | "FULL";
+      expectedSourceUpdatedAt: string;
+    },
+  ) {
+    return this.requestEmpty(`/api/budgets/${id}/conversion-preview`, {
+      method: "POST",
+      body: JSON.stringify(value),
+    });
   }
   assignBudgetCategory(budgetId: string, categoryId: string) {
     return this.requestEmpty(`/api/budgets/${budgetId}/categories`, {
@@ -342,6 +363,16 @@ export class RestExpenseClient implements ExpenseDataClient {
   }
   deleteProfile() {
     return this.requestEmpty("/api/users/me", { method: "DELETE" });
+  }
+  requestEmailChange(email: string) {
+    return this.request(
+      "/api/users/me/email-change",
+      z.object({
+        delivery: z.enum(["email", "development"]),
+        developmentVerificationUrl: z.string().url().optional(),
+      }),
+      { method: "POST", body: JSON.stringify({ email }) },
+    );
   }
 
   async registerDevice(name: string, platform: "WEB" | "DESKTOP") {

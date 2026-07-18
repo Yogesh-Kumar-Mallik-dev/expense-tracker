@@ -125,26 +125,6 @@ export class BudgetService extends SingleRowService<
       z.iso.date().parse(to),
     );
   }
-
-  async convertMode(id: string, userId: string): Promise<BudgetRecord> {
-    const source = await this.get(id, userId);
-    if (!source) throw new Error("Budget not found");
-    const preview = previewBudgetModeConversion(source);
-    const now = this.clock();
-    const target: BudgetRecord = {
-      ...source,
-      id: z.uuid().parse(this.idFactory()),
-      name: `${source.name} (${preview.to === "ENVELOPE" ? "Envelope" : "Limit"})`,
-      mode: preview.to,
-      amount: preview.suggestedAmount,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-    };
-    await this.repository.create(target);
-    await this.repository.delete(source.id, userId);
-    return target;
-  }
 }
 
 export interface EnvelopeAllocationRecord {

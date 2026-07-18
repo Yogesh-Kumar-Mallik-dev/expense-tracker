@@ -43,7 +43,7 @@ database and valid secrets are required.
 ```sh
 pnpm --filter @expense-tracker/api dev
 pnpm --filter @expense-tracker/api check-types
-pnpm --filter @expense-tracker/api test
+pnpm test:api
 pnpm --filter @expense-tracker/api build
 ```
 
@@ -104,9 +104,9 @@ Every API response includes rate-limit headers. Exceeding a policy returns
 | Group          | Routes                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------ |
 | Health         | `/api/health`                                                                                    |
-| Authentication | `/api/auth/register`, `/login`, `/refresh`, `/logout`                                            |
+| Authentication | `/api/auth/register`, `/login`, `/refresh`, `/logout`, `/confirm-email`                          |
 | Public keys    | `/api/auth/keys`                                                                                 |
-| Profile        | `/api/users/me`                                                                                  |
+| Profile        | `/api/users/me`, `/api/users/me/email-change`                                                   |
 | Domains        | `/api/accounts`, `/categories`, `/tags`, `/budgets`, `/transactions`, `/attachments`, `/devices` |
 | Assignments    | `/api/budgets/:id/categories`, `/api/transactions/:id/tags`                                      |
 | Reporting      | `/api/reporting/account-balances`, `/api/reporting/budget-usage`                                 |

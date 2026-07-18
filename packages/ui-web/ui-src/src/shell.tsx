@@ -15,6 +15,10 @@ import {
 import React from "react";
 import { useEffect, useState } from "react";
 import type { BrowserDiagnosticsTransport } from "@expense-tracker/logger/browser";
+import type {
+  LocalDatabaseLifecycle,
+  SyncController,
+} from "@expense-tracker/client-core";
 import { Button } from "#components/ui/button";
 import {
   Tooltip,
@@ -71,6 +75,8 @@ export function AppShell({
   onUnauthorized,
   onLogout,
   diagnostics,
+  sync,
+  localDatabase,
 }: {
   api: ExpenseDataClient;
   session: Session;
@@ -78,6 +84,8 @@ export function AppShell({
   onUnauthorized: () => void;
   onLogout: () => Promise<void>;
   diagnostics: BrowserDiagnosticsTransport;
+  sync: SyncController;
+  localDatabase: LocalDatabaseLifecycle;
 }) {
   const [route, setRoute] = useState<AppRoute>(routeFromHash);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -188,13 +196,14 @@ export function AppShell({
             />
           ) : null}
           {route === "reports" ? <ReportsScreen /> : null}
-          {route === "sync" ? <SyncScreen /> : null}
+          {route === "sync" ? <SyncScreen sync={sync} /> : null}
           {route === "settings" ? (
             <SettingsScreen
               session={session}
               api={api}
               onLogout={onLogout}
               diagnostics={diagnostics}
+              localDatabase={localDatabase}
             />
           ) : null}
           {route === "overview" ? <OverviewScreen navigate={navigate} /> : null}

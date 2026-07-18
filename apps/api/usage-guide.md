@@ -22,7 +22,7 @@ Validate a change with:
 
 ```sh
 pnpm --filter @expense-tracker/api check-types
-pnpm --filter @expense-tracker/api test
+pnpm test:api
 pnpm --filter @expense-tracker/api build
 ```
 
@@ -95,6 +95,22 @@ curl -X POST "$API/api/auth/logout" \
   -H "content-type: application/json" \
   -d "{\"refreshToken\":\"$REFRESH_TOKEN\"}"
 ```
+
+## Verified email changes
+
+An authenticated user requests a change without mutating the current address:
+
+```sh
+curl -X POST "$API/api/users/me/email-change" \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{"email":"new-address@example.com"}'
+```
+
+The verification link submits its opaque token to
+`POST /api/auth/confirm-email`. Configure `RESEND_API_KEY`, `EMAIL_FROM`, and
+`WEB_APP_URL` in production. Development returns a labelled verification URL
+instead of pretending a message was delivered.
 
 ## Accounts
 

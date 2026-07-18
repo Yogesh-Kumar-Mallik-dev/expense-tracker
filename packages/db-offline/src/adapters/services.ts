@@ -187,6 +187,9 @@ export class OfflineTransactionAdapter implements TransactionRepositoryPort {
   async delete(id: string, u: string) {
     await this.value.delete(id, u);
   }
+  async restore(id: string, u: string, updatedAt: string) {
+    await this.value.restore(id, u, updatedAt);
+  }
 }
 export class OfflineAttachmentAdapter implements AttachmentRepositoryPort {
   constructor(private readonly value: AttachmentRepository) {}

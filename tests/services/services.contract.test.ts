@@ -87,6 +87,11 @@ class MemoryTransactionRepository implements TransactionRepositoryPort {
     const old = await this.findById(id, u);
     if (old) this.rows.set(id, { ...old, deletedAt: clock() });
   }
+  async restore(id: string, u: string, updatedAt: string) {
+    const old = this.rows.get(id);
+    if (old?.userId === u)
+      this.rows.set(id, { ...old, deletedAt: null, updatedAt });
+  }
 }
 
 for (const adapterName of ["main-contract", "offline-contract"]) {
@@ -191,6 +196,26 @@ test("transaction paging uses repository total instead of truncating before pagi
   assert.equal(repository.pageOffset, 50);
   assert.equal(page.total, 137);
   assert.deepEqual(page.items, []);
+});
+
+test("transaction tombstones can be restored by their owner", async () => {
+  const repository = new MemoryTransactionRepository();
+  const service = new TransactionService(repository, () => TX, clock);
+  await service.create({
+    userId: USER,
+    accountId: ACCOUNT,
+    transferAccountId: null,
+    categoryId: null,
+    type: "EXPENSE",
+    amount: "1.0000",
+    currency: "USD",
+    description: null,
+    note: null,
+    occurredAt: clock(),
+  });
+  await service.delete(TX, USER);
+  assert.equal(await service.get(TX, USER), null);
+  assert.equal((await service.restore(TX, USER)).id, TX);
 });
 
 test("reporting derives budget usage and reports currency exclusions", async () => {
