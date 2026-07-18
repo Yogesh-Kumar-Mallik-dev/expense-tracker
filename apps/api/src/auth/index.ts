@@ -33,6 +33,16 @@ export async function requireUser(request: Request) {
 }
 
 export async function issueTokens(userId: string, deviceId?: string | null) {
+  return issueTokensWithClient(prisma, userId, deviceId);
+}
+
+type TokenClient = Pick<typeof prisma, "refreshToken">;
+
+async function issueTokensWithClient(
+  db: TokenClient,
+  userId: string,
+  deviceId?: string | null,
+) {
   z.uuid().parse(userId);
   const now = Math.floor(Date.now() / 1000);
   const refreshId = randomUUID();
@@ -50,7 +60,7 @@ export async function issueTokens(userId: string, deviceId?: string | null) {
     },
     configuration.REFRESH_TOKEN_SECRET,
   );
-  await prisma.refreshToken.create({
+  await db.refreshToken.create({
     data: {
       id: refreshId,
       userId,
@@ -88,10 +98,16 @@ export async function rotateRefreshToken(token: string) {
         "INVALID_REFRESH_TOKEN",
         "Refresh token is invalid or expired",
       );
-    await db.refreshToken.update({
-      where: { id: stored.id },
+    const revoked = await db.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    return { userId: payload.sub, deviceId: stored.deviceId };
+    if (revoked.count !== 1)
+      throw new HttpError(
+        401,
+        "INVALID_REFRESH_TOKEN",
+        "Refresh token is invalid or expired",
+      );
+    return issueTokensWithClient(db, payload.sub, stored.deviceId);
   });
 }

@@ -21,7 +21,9 @@ export const categories = sqliteTable(
     deletedAt: text("deletedAt"),
   },
   (table) => [
-    uniqueIndex("Category_userId_name_type_key").on(table.userId, table.name, table.type),
+    uniqueIndex("Category_userId_name_type_active_key")
+      .on(table.userId, table.name, table.type)
+      .where(isNull(table.deletedAt)),
     index("Category_userId_type_isArchived_idx").on(table.userId, table.type, table.isArchived),
     index("Category_parentId_idx").on(table.parentId),
   ],
@@ -46,3 +48,4 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type NewBudgetCategory = typeof budgetCategories.$inferInsert;
+import { isNull } from "drizzle-orm";

@@ -7,7 +7,13 @@ export class TransactionTagRepository {
   constructor(private readonly db: OfflineDatabase) {}
 
   create(data: CreateTransactionTagInput) {
-    return this.db.insert(transactionTags).values(data);
+    return this.db
+      .insert(transactionTags)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [transactionTags.transactionId, transactionTags.tagId],
+        set: { deletedAt: null },
+      });
   }
 
   listByTransaction(transactionId: string, userId: string) {

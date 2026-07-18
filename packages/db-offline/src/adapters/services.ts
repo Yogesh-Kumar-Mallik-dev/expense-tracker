@@ -318,7 +318,7 @@ export class OfflineReportingAdapter implements ReportingRepositoryPort {
         ),
       );
   }
-  async listEnvelopeAllocations(ids: string[]) {
+  async listEnvelopeAllocations(ids: string[], from: string, to: string) {
     if (!ids.length) return [];
     return await this.db
       .select()
@@ -327,10 +327,12 @@ export class OfflineReportingAdapter implements ReportingRepositoryPort {
         and(
           inArray(envelopeAllocations.budgetId, ids),
           isNull(envelopeAllocations.deletedAt),
+          gte(envelopeAllocations.occurredAt, from),
+          lte(envelopeAllocations.occurredAt, to),
         ),
       );
   }
-  async listBudgetTransfers(ids: string[]) {
+  async listBudgetTransfers(ids: string[], from: string, to: string) {
     if (!ids.length) return [];
     return await this.db
       .select()
@@ -339,6 +341,8 @@ export class OfflineReportingAdapter implements ReportingRepositoryPort {
         and(
           inArray(budgetTransfers.budgetId, ids),
           isNull(budgetTransfers.deletedAt),
+          gte(budgetTransfers.occurredAt, from),
+          lte(budgetTransfers.occurredAt, to),
         ),
       );
   }

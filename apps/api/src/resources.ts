@@ -1,7 +1,16 @@
 import { requireUser } from "./auth";
 import { body, empty, HttpError, ok } from "./http";
-import { paginate } from "./pagination";
+import { paginate, paginationParams } from "./pagination";
 import { services } from "./services";
+import {
+  createTransactionSchema,
+  type UpdateTransactionInput,
+  updateTransactionSchema,
+} from "@expense-tracker/services";
+import {
+  validateAttachmentRelationship,
+  validateTransactionRelationships,
+} from "./domain-authorization";
 
 export type ResourceName =
   | "accounts"
@@ -53,9 +62,9 @@ export async function listResource(name: ResourceName, request: Request) {
         );
       return paginated(await services.budgets.listForPeriod(userId, from, to));
     }
-    case "transactions":
-      return paginated(
-        await services.transactions.list(userId, {
+    case "transactions": {
+      const { page, pageSize } = paginationParams(url);
+      const result = await services.transactions.page(userId, {
           ...(url.searchParams.get("accountId")
             ? { accountId: url.searchParams.get("accountId")! }
             : {}),
@@ -68,8 +77,20 @@ export async function listResource(name: ResourceName, request: Request) {
           ...(url.searchParams.get("to")
             ? { to: url.searchParams.get("to")! }
             : {}),
-        }),
-      );
+          offset: (page - 1) * pageSize,
+          limit: pageSize,
+        });
+      const totalPages =
+        result.total === 0 ? 0 : Math.ceil(result.total / pageSize);
+      return ok(result.items, 200, {
+        page,
+        pageSize,
+        total: result.total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrevious: page > 1 && result.total > 0,
+      });
+    }
     case "attachments": {
       const transactionId = url.searchParams.get("transactionId");
       if (!transactionId)
@@ -108,12 +129,30 @@ export async function createResource(name: ResourceName, request: Request) {
         await services.budgets.create({ ...input, userId } as never),
         201,
       );
-    case "transactions":
+    case "transactions": {
+      const value = createTransactionSchema.parse({ ...input, userId });
+      await validateTransactionRelationships(userId, value);
       return ok(
-        await services.transactions.create({ ...input, userId } as never),
+        await services.transactions.create(value),
         201,
       );
+    }
     case "attachments":
+      if (
+        typeof input.transactionId !== "string" ||
+        typeof input.storageKey !== "string"
+      )
+        throw new HttpError(
+          400,
+          "INVALID_ATTACHMENT",
+          "transactionId and storageKey are required",
+          ["transactionId", "storageKey"],
+        );
+      await validateAttachmentRelationship(
+        userId,
+        input.transactionId,
+        input.storageKey,
+      );
       return ok(
         await services.attachments.create({ ...input, userId } as never),
         201,
@@ -164,8 +203,22 @@ export async function updateResource(
     await services.categories.update(id, userId, input);
   else if (name === "tags") await services.tags.update(id, userId, input);
   else if (name === "budgets") await services.budgets.update(id, userId, input);
-  else if (name === "transactions")
-    await services.transactions.update(id, userId, input as never);
+  else if (name === "transactions") {
+    const existing = await services.transactions.get(id, userId);
+    if (!existing) throw new HttpError(404, "NOT_FOUND", "Record not found");
+    const value = updateTransactionSchema.parse(input) as UpdateTransactionInput;
+    await validateTransactionRelationships(userId, {
+      accountId: value.accountId,
+      transferAccountId: value.transferAccountId,
+      categoryId:
+        value.categoryId === undefined
+          ? existing.categoryId
+          : value.categoryId,
+      type: value.type,
+      currency: value.currency ?? existing.currency,
+    });
+    await services.transactions.update(id, userId, value);
+  }
   else if (name === "devices") await services.devices.update(id, userId, input);
   else
     throw new HttpError(

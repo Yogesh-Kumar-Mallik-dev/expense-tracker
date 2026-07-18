@@ -18,6 +18,7 @@ export class HttpError extends Error {
     readonly code: string,
     message: string,
     readonly fields?: string[],
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -55,6 +56,7 @@ export function handle(error: unknown, errorId?: string) {
           message: error.message,
           fields: error.fields,
           errorId,
+          ...error.details,
         },
       },
       { status: error.status },

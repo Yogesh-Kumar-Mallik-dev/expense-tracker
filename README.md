@@ -1,8 +1,25 @@
 # Expense Tracker
 
-A modern, offline-first, cross-platform expense tracker built as a **Turborepo** monorepo.
+A cross-platform expense tracker whose target architecture is offline-first,
+built as a **Turborepo** monorepo.
 
-The project consists of a single backend powering three frontend applications. All business logic is shared through a common service layer, allowing every platform to behave consistently while supporting offline operation through a local SQLite database.
+The project consists of a single backend and three frontend hosts. Shared
+services, SQLite drivers, and PowerSync integration exist, but the platform
+composition required for restart-safe offline product behavior is still being
+connected.
+
+## Capability status
+
+| Capability | API | Web | Desktop | Mobile |
+| --- | --- | --- | --- | --- |
+| Authentication | Implemented | In-memory session | In-memory session | Planned |
+| Transaction CRUD | Implemented | Online REST | Online REST | Planned |
+| Local SQLite | Package implemented | Not connected | Not connected | Not connected |
+| PowerSync | Upload/download infrastructure | Not connected | Plugin only | Not connected |
+| Offline restart | Infrastructure only | Not delivered | Not delivered | Not delivered |
+| Attachments | API implemented | Not delivered | Not delivered | Not delivered |
+| Budget limits | API/service implemented | Read-only | Read-only | Planned |
+| Envelope mode | Sync surfaces implemented; recovery integration pending | Read-only | Read-only | Planned |
 
 ---
 

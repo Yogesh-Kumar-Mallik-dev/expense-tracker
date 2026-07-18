@@ -26,12 +26,9 @@ export const budgets = sqliteTable(
     deletedAt: text("deletedAt"),
   },
   (table) => [
-    uniqueIndex("Budget_userId_name_startsOn_endsOn_key").on(
-      table.userId,
-      table.name,
-      table.startsOn,
-      table.endsOn,
-    ),
+    uniqueIndex("Budget_userId_name_period_active_key")
+      .on(table.userId, table.name, table.startsOn, table.endsOn)
+      .where(isNull(table.deletedAt)),
     index("Budget_userId_startsOn_endsOn_idx").on(
       table.userId,
       table.startsOn,
@@ -90,3 +87,4 @@ export type Budget = typeof budgets.$inferSelect;
 export type NewBudget = typeof budgets.$inferInsert;
 export type EnvelopeAllocation = typeof envelopeAllocations.$inferSelect;
 export type BudgetTransfer = typeof budgetTransfers.$inferSelect;
+import { isNull } from "drizzle-orm";

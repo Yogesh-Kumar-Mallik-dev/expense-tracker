@@ -10,7 +10,6 @@ model Tag {
   user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   transactions TransactionTag[]
 
-  @@unique([userId, name])
   @@index([userId])
 }
 

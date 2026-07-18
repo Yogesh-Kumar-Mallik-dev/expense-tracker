@@ -22,8 +22,14 @@ export interface ReportingRepositoryPort {
   listBudgetCategories(budgetIds: string[]): Promise<BudgetCategoryRecord[]>;
   listEnvelopeAllocations(
     budgetIds: string[],
+    from: string,
+    to: string,
   ): Promise<EnvelopeAllocationRecord[]>;
-  listBudgetTransfers(budgetIds: string[]): Promise<EnvelopeTransferRecord[]>;
+  listBudgetTransfers(
+    budgetIds: string[],
+    from: string,
+    to: string,
+  ): Promise<EnvelopeTransferRecord[]>;
 }
 export interface AccountBalance {
   accountId: string;
@@ -91,15 +97,22 @@ export class ReportingService {
     from: string,
     to: string,
   ): Promise<BudgetUsage[]> {
-    const [budgets, transactions] = await Promise.all([
-      this.repository.listBudgets(userId, from, to),
-      this.repository.listTransactions(userId, from, to),
-    ]);
+    const budgets = await this.repository.listBudgets(userId, from, to);
+    const earliestStart = budgets.reduce(
+      (earliest, budget) =>
+        budget.startsOn < earliest ? budget.startsOn : earliest,
+      from,
+    );
+    const transactions = await this.repository.listTransactions(
+      userId,
+      earliestStart,
+      to,
+    );
     const budgetIds = budgets.map((b) => b.id);
     const [assignments, allocations, transfers] = await Promise.all([
       this.repository.listBudgetCategories(budgetIds),
-      this.repository.listEnvelopeAllocations(budgetIds),
-      this.repository.listBudgetTransfers(budgetIds),
+      this.repository.listEnvelopeAllocations(budgetIds, earliestStart, to),
+      this.repository.listBudgetTransfers(budgetIds, earliestStart, to),
     ]);
     return budgets.map((budget) => {
       const categoryIds = new Set(
@@ -108,6 +121,7 @@ export class ReportingService {
           .map((a) => a.categoryId),
       );
       let spent = 0n;
+      let previousSpent = 0n;
       const excluded: string[] = [];
       for (const transaction of transactions) {
         if (
@@ -120,10 +134,16 @@ export class ReportingService {
           excluded.push(transaction.id);
           continue;
         }
-        spent += parseMoney(transaction.amount);
+        if (transaction.occurredAt.slice(0, 10) < from)
+          previousSpent += parseMoney(transaction.amount);
+        else spent += parseMoney(transaction.amount);
       }
       const assigned = allocations
-        .filter((allocation) => allocation.budgetId === budget.id)
+        .filter(
+          (allocation) =>
+            allocation.budgetId === budget.id &&
+            allocation.occurredAt >= from,
+        )
         .reduce(
           (total, allocation) => total + parseMoney(allocation.amount),
           0n,
@@ -132,6 +152,7 @@ export class ReportingService {
         .filter(
           (transfer) =>
             transfer.budgetId === budget.id &&
+            transfer.occurredAt >= from &&
             transfer.toCategoryId &&
             categoryIds.has(transfer.toCategoryId),
         )
@@ -140,11 +161,53 @@ export class ReportingService {
         .filter(
           (transfer) =>
             transfer.budgetId === budget.id &&
+            transfer.occurredAt >= from &&
             transfer.fromCategoryId &&
             categoryIds.has(transfer.fromCategoryId),
         )
         .reduce((total, transfer) => total + parseMoney(transfer.amount), 0n);
-      const available = assigned + incoming - outgoing - spent;
+      const previousAssigned = allocations
+        .filter(
+          (allocation) =>
+            allocation.budgetId === budget.id &&
+            allocation.occurredAt < from,
+        )
+        .reduce(
+          (total, allocation) => total + parseMoney(allocation.amount),
+          0n,
+        );
+      const previousIncoming = transfers
+        .filter(
+          (transfer) =>
+            transfer.budgetId === budget.id &&
+            transfer.occurredAt < from &&
+            transfer.toCategoryId &&
+            categoryIds.has(transfer.toCategoryId),
+        )
+        .reduce((total, transfer) => total + parseMoney(transfer.amount), 0n);
+      const previousOutgoing = transfers
+        .filter(
+          (transfer) =>
+            transfer.budgetId === budget.id &&
+            transfer.occurredAt < from &&
+            transfer.fromCategoryId &&
+            categoryIds.has(transfer.fromCategoryId),
+        )
+        .reduce((total, transfer) => total + parseMoney(transfer.amount), 0n);
+      const previousAvailable =
+        previousAssigned +
+        previousIncoming -
+        previousOutgoing -
+        previousSpent;
+      const carryOver =
+        budget.rolloverPolicy === "FULL"
+          ? previousAvailable
+          : budget.rolloverPolicy === "POSITIVE_ONLY" &&
+              previousAvailable > 0n
+            ? previousAvailable
+            : 0n;
+      const available =
+        carryOver + assigned + incoming - outgoing - spent;
       return {
         budgetId: budget.id,
         mode: budget.mode,

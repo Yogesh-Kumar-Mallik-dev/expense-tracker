@@ -1,3 +1,4 @@
+import { isNull } from "drizzle-orm";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { users } from "./user";
 
@@ -21,7 +22,9 @@ export const accounts = sqliteTable(
     deletedAt: text("deletedAt"),
   },
   (table) => [
-    uniqueIndex("Account_userId_name_key").on(table.userId, table.name),
+    uniqueIndex("Account_userId_name_active_key")
+      .on(table.userId, table.name)
+      .where(isNull(table.deletedAt)),
     index("Account_userId_isArchived_idx").on(table.userId, table.isArchived),
   ],
 );

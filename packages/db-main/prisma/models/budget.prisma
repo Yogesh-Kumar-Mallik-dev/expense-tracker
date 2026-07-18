@@ -28,7 +28,6 @@ model Budget {
   allocations EnvelopeAllocation[]
   transfers BudgetTransfer[]
 
-  @@unique([userId, name, startsOn, endsOn])
   @@index([userId, startsOn, endsOn])
 }
 

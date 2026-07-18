@@ -14,7 +14,9 @@ export const tags = sqliteTable(
     deletedAt: text("deletedAt"),
   },
   (table) => [
-    uniqueIndex("Tag_userId_name_key").on(table.userId, table.name),
+    uniqueIndex("Tag_userId_name_active_key")
+      .on(table.userId, table.name)
+      .where(isNull(table.deletedAt)),
     index("Tag_userId_idx").on(table.userId),
   ],
 );
@@ -38,3 +40,4 @@ export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
 export type TransactionTag = typeof transactionTags.$inferSelect;
 export type NewTransactionTag = typeof transactionTags.$inferInsert;
+import { isNull } from "drizzle-orm";

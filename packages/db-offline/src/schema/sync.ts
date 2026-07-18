@@ -19,3 +19,27 @@ export const syncStates = sqliteTable(
 
 export type SyncState = typeof syncStates.$inferSelect;
 export type NewSyncState = typeof syncStates.$inferInsert;
+
+export const syncConflicts = sqliteTable(
+  "SyncConflict",
+  {
+    id: text("id").primaryKey().notNull(),
+    crudTransactionId: text("crudTransactionId").notNull(),
+    entity: text("entity").notNull(),
+    recordId: text("recordId").notNull(),
+    operation: text("operation").notNull(),
+    kind: text("kind").notNull(),
+    fields: text("fields").notNull().default("[]"),
+    message: text("message").notNull(),
+    recovery: text("recovery").notNull(),
+    createdAt: text("createdAt").notNull(),
+    resolvedAt: text("resolvedAt"),
+  },
+  (table) => [
+    index("SyncConflict_recordId_idx").on(table.entity, table.recordId),
+    index("SyncConflict_resolvedAt_idx").on(table.resolvedAt),
+  ],
+);
+
+export type SyncConflict = typeof syncConflicts.$inferSelect;
+export type NewSyncConflict = typeof syncConflicts.$inferInsert;

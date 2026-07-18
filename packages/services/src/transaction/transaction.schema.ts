@@ -1,13 +1,17 @@
 import { z } from "zod";
 
 export const moneySchema = z.string().regex(/^\d+(?:\.\d{1,4})?$/);
+export const positiveMoneySchema = moneySchema.refine(
+  (value) => /[1-9]/.test(value),
+  "Amount must be greater than zero",
+);
 const transactionFields = z.object({
   userId: z.uuid(),
   accountId: z.uuid(),
   transferAccountId: z.uuid().nullable().default(null),
   categoryId: z.uuid().nullable().default(null),
   type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]),
-  amount: moneySchema,
+  amount: positiveMoneySchema,
   currency: z
     .string()
     .length(3)
@@ -43,6 +47,12 @@ const validateTransfer = (
       code: "custom",
       message: "Transfer accounts must differ",
       path: ["transferAccountId"],
+    });
+  if (value.type === "TRANSFER" && "categoryId" in value && value.categoryId)
+    context.addIssue({
+      code: "custom",
+      message: "Transfers cannot have a category",
+      path: ["categoryId"],
     });
 };
 

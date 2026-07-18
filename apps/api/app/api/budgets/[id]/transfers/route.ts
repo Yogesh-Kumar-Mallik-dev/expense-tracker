@@ -34,6 +34,15 @@ export const POST = route(async (request: Request, context: Context) => {
   );
   if (owned.some((category) => !category))
     throw new HttpError(404, "NOT_FOUND", "Category not found");
+  const assignments = await services.budgetCategories.list(budgetId, userId);
+  const assignedIds = new Set(assignments.map((item) => item.categoryId));
+  if (categoryIds.some((id) => !assignedIds.has(id)))
+    throw new HttpError(
+      400,
+      "CATEGORY_NOT_ASSIGNED",
+      "Transfer categories must be assigned to the envelope budget",
+      ["fromCategoryId", "toCategoryId"],
+    );
   return ok(
     await services.budgetActivity.transfer(userId, {
       ...input,

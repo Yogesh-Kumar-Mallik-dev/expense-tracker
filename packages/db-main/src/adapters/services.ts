@@ -379,10 +379,46 @@ export class MainTransactionAdapter implements TransactionRepositoryPort {
             : {}),
         },
         ...(f.offset === undefined ? {} : { skip: f.offset }),
-        take: f.limit ?? 50,
+        ...(f.limit === undefined ? {} : { take: f.limit }),
         orderBy: { occurredAt: "desc" },
       })
     ).map(transaction);
+  }
+  async listPageByUser(
+    u: string,
+    f: {
+      accountId?: string;
+      categoryId?: string;
+      from?: string;
+      to?: string;
+      offset: number;
+      limit: number;
+    },
+  ) {
+    const where = {
+      userId: u,
+      deletedAt: null,
+      ...(f.accountId ? { accountId: f.accountId } : {}),
+      ...(f.categoryId ? { categoryId: f.categoryId } : {}),
+      ...(f.from || f.to
+        ? {
+            occurredAt: {
+              ...(f.from ? { gte: new Date(f.from) } : {}),
+              ...(f.to ? { lte: new Date(f.to) } : {}),
+            },
+          }
+        : {}),
+    };
+    const [items, total] = await this.db.$transaction([
+      this.db.transaction.findMany({
+        where,
+        skip: f.offset,
+        take: f.limit,
+        orderBy: { occurredAt: "desc" },
+      }),
+      this.db.transaction.count({ where }),
+    ]);
+    return { items: items.map(transaction), total };
   }
   async update(
     id: string,
@@ -526,8 +562,15 @@ export class MainUserAdapter implements UserRepositoryPort {
 export class MainBudgetCategoryAdapter implements AssignmentRepositoryPort<BudgetCategoryRecord> {
   constructor(private db: PrismaClient = prisma) {}
   async create(v: BudgetCategoryRecord) {
-    await this.db.budgetCategory.create({
-      data: { ...v, createdAt: new Date(v.createdAt), deletedAt: null },
+    await this.db.budgetCategory.upsert({
+      where: {
+        budgetId_categoryId: {
+          budgetId: v.budgetId,
+          categoryId: v.categoryId,
+        },
+      },
+      create: { ...v, createdAt: new Date(v.createdAt), deletedAt: null },
+      update: { deletedAt: null },
     });
   }
   async list(p: string, u: string) {
@@ -560,8 +603,15 @@ export class MainBudgetCategoryAdapter implements AssignmentRepositoryPort<Budge
 export class MainTransactionTagAdapter implements AssignmentRepositoryPort<TransactionTagRecord> {
   constructor(private db: PrismaClient = prisma) {}
   async create(v: TransactionTagRecord) {
-    await this.db.transactionTag.create({
-      data: { ...v, createdAt: new Date(v.createdAt), deletedAt: null },
+    await this.db.transactionTag.upsert({
+      where: {
+        transactionId_tagId: {
+          transactionId: v.transactionId,
+          tagId: v.tagId,
+        },
+      },
+      create: { ...v, createdAt: new Date(v.createdAt), deletedAt: null },
+      update: { deletedAt: null },
     });
   }
   async list(p: string, u: string) {
@@ -640,10 +690,14 @@ export class MainReportingAdapter implements ReportingRepositoryPort {
       deletedAt: iso(v.deletedAt),
     }));
   }
-  async listEnvelopeAllocations(ids: string[]) {
+  async listEnvelopeAllocations(ids: string[], from: string, to: string) {
     return (
       await this.db.envelopeAllocation.findMany({
-        where: { budgetId: { in: ids }, deletedAt: null },
+        where: {
+          budgetId: { in: ids },
+          deletedAt: null,
+          occurredAt: { gte: new Date(from), lte: new Date(to) },
+        },
       })
     ).map((v) => ({
       ...v,
@@ -653,10 +707,14 @@ export class MainReportingAdapter implements ReportingRepositoryPort {
       deletedAt: iso(v.deletedAt),
     }));
   }
-  async listBudgetTransfers(ids: string[]) {
+  async listBudgetTransfers(ids: string[], from: string, to: string) {
     return (
       await this.db.budgetTransfer.findMany({
-        where: { budgetId: { in: ids }, deletedAt: null },
+        where: {
+          budgetId: { in: ids },
+          deletedAt: null,
+          occurredAt: { gte: new Date(from), lte: new Date(to) },
+        },
       })
     ).map((v) => ({
       ...v,

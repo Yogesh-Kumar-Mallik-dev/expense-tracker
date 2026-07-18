@@ -47,6 +47,8 @@ class MemoryAccountRepository implements AccountRepositoryPort {
 }
 class MemoryTransactionRepository implements TransactionRepositoryPort {
   rows = new Map<string, TransactionRecord>();
+  pageOffset = -1;
+  pageTotalOverride: number | null = null;
   async create(v: TransactionRecord) {
     this.rows.set(v.id, v);
   }
@@ -58,6 +60,20 @@ class MemoryTransactionRepository implements TransactionRepositoryPort {
     return [...this.rows.values()].filter(
       (v) => v.userId === u && !v.deletedAt,
     );
+  }
+  async listPageByUser(
+    u: string,
+    filters: {
+      offset: number;
+      limit: number;
+    },
+  ) {
+    this.pageOffset = filters.offset;
+    const values = await this.listByUser(u);
+    return {
+      items: values.slice(filters.offset, filters.offset + filters.limit),
+      total: this.pageTotalOverride ?? values.length,
+    };
   }
   async update(
     id: string,
@@ -103,6 +119,20 @@ for (const adapterName of ["main-contract", "offline-contract"]) {
       occurredAt: clock(),
     });
     assert.equal(repository.rows.size, 1);
+    await assert.rejects(
+      service.create({
+        userId: USER,
+        accountId: ACCOUNT,
+        transferAccountId: null,
+        categoryId: null,
+        type: "EXPENSE",
+        amount: "0.0000",
+        currency: "USD",
+        description: null,
+        note: null,
+        occurredAt: clock(),
+      }),
+    );
   });
 }
 
@@ -151,6 +181,16 @@ test("reporting derives balances and transfers without persisted counters", asyn
     (await reports.accountBalances(USER)).map((v) => v.balance),
     ["6.7500", "3.2500"],
   );
+});
+
+test("transaction paging uses repository total instead of truncating before pagination", async () => {
+  const repository = new MemoryTransactionRepository();
+  repository.pageTotalOverride = 137;
+  const service = new TransactionService(repository);
+  const page = await service.page(USER, { offset: 50, limit: 25 });
+  assert.equal(repository.pageOffset, 50);
+  assert.equal(page.total, 137);
+  assert.deepEqual(page.items, []);
 });
 
 test("reporting derives budget usage and reports currency exclusions", async () => {
@@ -210,6 +250,98 @@ test("reporting derives budget usage and reports currency exclusions", async () 
   assert.equal(usage?.spent, "4.2500");
   assert.equal(usage?.remaining, "5.7500");
   assert.equal(usage?.excludedTransactionIds.length, 1);
+});
+
+test("envelope usage applies period boundaries and positive-only rollover", async () => {
+  const budgetId = "00000000-0000-4000-8000-000000000021";
+  const categoryId = "00000000-0000-4000-8000-000000000022";
+  const transaction = (
+    id: string,
+    occurredAt: string,
+    amount: string,
+  ): TransactionRecord => ({
+    id,
+    userId: USER,
+    accountId: ACCOUNT,
+    transferAccountId: null,
+    categoryId,
+    type: "EXPENSE",
+    amount,
+    currency: "USD",
+    description: null,
+    note: null,
+    occurredAt,
+    createdAt: occurredAt,
+    updatedAt: occurredAt,
+    deletedAt: null,
+  });
+  const reports = new ReportingService({
+    listAccounts: async () => [],
+    listTransactions: async () => [
+      transaction(
+        "00000000-0000-4000-8000-000000000023",
+        "2026-06-20T12:00:00.000Z",
+        "3.0000",
+      ),
+      transaction(
+        "00000000-0000-4000-8000-000000000024",
+        "2026-07-10T12:00:00.000Z",
+        "2.0000",
+      ),
+    ],
+    listBudgets: async () => [
+      {
+        id: budgetId,
+        userId: USER,
+        name: "Food",
+        amount: "20.0000",
+        currency: "USD",
+        startsOn: "2026-06-01",
+        endsOn: "2026-07-31",
+        mode: "ENVELOPE",
+        rolloverPolicy: "POSITIVE_ONLY",
+        createdAt: clock(),
+        updatedAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listBudgetCategories: async () => [
+      {
+        id: "00000000-0000-4000-8000-000000000025",
+        budgetId,
+        categoryId,
+        createdAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listEnvelopeAllocations: async () => [
+      {
+        id: "00000000-0000-4000-8000-000000000026",
+        budgetId,
+        categoryId,
+        amount: "10.0000",
+        occurredAt: "2026-06-10",
+        note: null,
+        createdAt: clock(),
+        deletedAt: null,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000027",
+        budgetId,
+        categoryId,
+        amount: "5.0000",
+        occurredAt: "2026-07-02",
+        note: null,
+        createdAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listBudgetTransfers: async () => [],
+  });
+  const [usage] = await reports.budgetUsage(USER, "2026-07-01", "2026-07-31");
+  assert.equal(usage?.assigned, "5.0000");
+  assert.equal(usage?.spent, "2.0000");
+  assert.equal(usage?.available, "10.0000");
 });
 
 test("partial workflows and permanent conflicts remain explicit", () => {

@@ -22,7 +22,6 @@ model Category {
   budgets      BudgetCategory[]
   transactions Transaction[]
 
-  @@unique([userId, name, type])
   @@index([userId, type, isArchived])
   @@index([parentId])
 }

@@ -49,12 +49,12 @@ test("authentication routes use the strict rate-limit policy", () => {
     headers: { "x-forwarded-for": "192.0.2.10" },
   });
   for (let attempt = 1; attempt <= 10; attempt += 1) {
-    const result = checkRateLimit(request, 1_000);
+    const result = checkRateLimit(request, 1_000, true);
     assert.equal(result.allowed, true);
     assert.equal(result.limit, 10);
     assert.equal(result.remaining, 10 - attempt);
   }
-  const rejected = checkRateLimit(request, 1_000);
+  const rejected = checkRateLimit(request, 1_000, true);
   assert.equal(rejected.allowed, false);
   assert.equal(rejected.retryAfter, 60);
 });
@@ -64,6 +64,21 @@ test("rate-limit buckets reset after the window", () => {
   const request = new Request("https://api.example.test/api/accounts", {
     headers: { "x-real-ip": "192.0.2.20" },
   });
-  assert.equal(checkRateLimit(request, 1_000).remaining, 119);
-  assert.equal(checkRateLimit(request, 61_001).remaining, 119);
+  assert.equal(checkRateLimit(request, 1_000, true).remaining, 119);
+  assert.equal(checkRateLimit(request, 61_001, true).remaining, 119);
+});
+
+test("forwarding headers do not select buckets unless proxy trust is enabled", () => {
+  resetRateLimitsForTests();
+  const first = new Request("https://api.example.test/api/accounts", {
+    headers: { "x-forwarded-for": "192.0.2.1" },
+  });
+  const spoofed = new Request("https://api.example.test/api/accounts", {
+    headers: { "x-forwarded-for": "192.0.2.2" },
+  });
+  assert.equal(checkRateLimit(first, 1_000, false).remaining, 119);
+  assert.equal(checkRateLimit(spoofed, 1_000, false).remaining, 118);
+  resetRateLimitsForTests();
+  assert.equal(checkRateLimit(first, 1_000, true).remaining, 119);
+  assert.equal(checkRateLimit(spoofed, 1_000, true).remaining, 119);
 });

@@ -43,6 +43,33 @@ export class TransactionService {
     return this.repository.listByUser(zUuid(userId), filters);
   }
 
+  async page(
+    userId: string,
+    filters: {
+      accountId?: string;
+      categoryId?: string;
+      from?: string;
+      to?: string;
+      offset: number;
+      limit: number;
+    },
+  ) {
+    const parsedUserId = zUuid(userId);
+    if (this.repository.listPageByUser) {
+      return this.repository.listPageByUser(parsedUserId, filters);
+    }
+    const values = await this.repository.listByUser(parsedUserId, {
+      ...(filters.accountId ? { accountId: filters.accountId } : {}),
+      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+      ...(filters.from ? { from: filters.from } : {}),
+      ...(filters.to ? { to: filters.to } : {}),
+    });
+    return {
+      items: values.slice(filters.offset, filters.offset + filters.limit),
+      total: values.length,
+    };
+  }
+
   // Concurrency note: Safe single-row replacement of explicit fields; no value is computed from stale transaction state.
   async update(id: string, userId: string, input: UpdateTransactionInput) {
     const value = updateTransactionSchema.parse(

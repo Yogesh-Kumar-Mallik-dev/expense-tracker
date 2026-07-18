@@ -51,6 +51,17 @@ export interface TransactionRepositoryPort {
       limit?: number;
     },
   ): Promise<TransactionRecord[]>;
+  listPageByUser?(
+    userId: string,
+    filters: {
+      accountId?: string;
+      categoryId?: string;
+      from?: string;
+      to?: string;
+      offset: number;
+      limit: number;
+    },
+  ): Promise<{ items: TransactionRecord[]; total: number }>;
   update(
     id: string,
     userId: string,

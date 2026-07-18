@@ -36,6 +36,22 @@ streams:
       JOIN "Budget" AS budget ON budget.id = assignment."budgetId"
       WHERE budget."userId" = auth.user_id()
 
+  my_envelope_allocations:
+    auto_subscribe: true
+    query: |
+      SELECT allocation.*
+      FROM "EnvelopeAllocation" AS allocation
+      JOIN "Budget" AS budget ON budget.id = allocation."budgetId"
+      WHERE budget."userId" = auth.user_id()
+
+  my_budget_transfers:
+    auto_subscribe: true
+    query: |
+      SELECT transfer.*
+      FROM "BudgetTransfer" AS transfer
+      JOIN "Budget" AS budget ON budget.id = transfer."budgetId"
+      WHERE budget."userId" = auth.user_id()
+
   my_transactions:
     auto_subscribe: true
     query: SELECT * FROM "Transaction" WHERE "userId" = auth.user_id()

@@ -15,7 +15,8 @@ const WINDOW_MS = 60_000;
 const buckets = new Map<string, Bucket>();
 let lastCleanup = 0;
 
-function requestIdentity(request: Request) {
+function requestIdentity(request: Request, trustProxy: boolean) {
+  if (!trustProxy) return "direct";
   const forwarded = request.headers
     .get("x-forwarded-for")
     ?.split(",")[0]
@@ -40,6 +41,7 @@ function policy(url: URL) {
 export function checkRateLimit(
   request: Request,
   now = Date.now(),
+  trustProxy = process.env.TRUST_PROXY === "true",
 ): RateLimitResult {
   if (now - lastCleanup >= WINDOW_MS) {
     for (const [key, bucket] of buckets) {
@@ -49,7 +51,7 @@ export function checkRateLimit(
   }
 
   const selected = policy(new URL(request.url));
-  const key = `${selected.name}:${requestIdentity(request)}`;
+  const key = `${selected.name}:${requestIdentity(request, trustProxy)}`;
   let bucket = buckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
     bucket = { count: 0, resetAt: now + WINDOW_MS };

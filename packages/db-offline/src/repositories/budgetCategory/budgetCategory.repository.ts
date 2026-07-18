@@ -7,7 +7,13 @@ export class BudgetCategoryRepository {
   constructor(private readonly db: OfflineDatabase) {}
 
   create(data: CreateBudgetCategoryInput) {
-    return this.db.insert(budgetCategories).values(data);
+    return this.db
+      .insert(budgetCategories)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [budgetCategories.budgetId, budgetCategories.categoryId],
+        set: { deletedAt: null },
+      });
   }
 
   listByBudget(budgetId: string, userId: string) {

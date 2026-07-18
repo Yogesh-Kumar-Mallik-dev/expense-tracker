@@ -15,7 +15,7 @@ import { budgetTransfers, budgets, envelopeAllocations } from "./budget";
 import { budgetCategories, categories } from "./category";
 import { devices } from "./device";
 import { refreshTokens } from "./refreshToken";
-import { syncStates } from "./sync";
+import { syncConflicts, syncStates } from "./sync";
 import { tags, transactionTags } from "./tag";
 import { transactions } from "./transaction";
 import { users } from "./user";
@@ -35,4 +35,5 @@ export const drizzleSchema = {
   devices,
   refreshTokens,
   syncStates,
+  syncConflicts,
 };

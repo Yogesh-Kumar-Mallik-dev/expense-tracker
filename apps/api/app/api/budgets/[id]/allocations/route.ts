@@ -27,6 +27,14 @@ export const POST = route(async (request: Request, context: Context) => {
   const input = schema.parse(await body(request));
   if (!(await services.categories.get(input.categoryId, userId)))
     throw new HttpError(404, "NOT_FOUND", "Category not found");
+  const assignments = await services.budgetCategories.list(budgetId, userId);
+  if (!assignments.some((item) => item.categoryId === input.categoryId))
+    throw new HttpError(
+      400,
+      "CATEGORY_NOT_ASSIGNED",
+      "Category must be assigned to the envelope budget",
+      ["categoryId"],
+    );
   return ok(
     await services.budgetActivity.allocate(userId, {
       ...input,

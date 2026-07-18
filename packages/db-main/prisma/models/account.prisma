@@ -25,6 +25,5 @@ model Account {
   transactions         Transaction[] @relation("TransactionAccount")
   transferTransactions Transaction[] @relation("TransferAccount")
 
-  @@unique([userId, name])
   @@index([userId, isArchived])
 }
