@@ -105,7 +105,13 @@ export function createMobileApplication(): ExpenseApplication {
     },
   });
   references.session = session;
-  const remote = new RestExpenseClient(apiUrl, session);
+  const financialTimezone = () => {
+    const state = session.state();
+    return state.status === "authenticated"
+      ? state.session.user.timezone
+      : "UTC";
+  };
+  const remote = new RestExpenseClient(apiUrl, session, financialTimezone);
   references.remote = remote;
   const data = new OfflineExpenseClient(
     () => runtime.services(),
@@ -116,6 +122,7 @@ export function createMobileApplication(): ExpenseApplication {
       return state.session.user.id;
     },
     remote,
+    financialTimezone,
   );
   return {
     session,

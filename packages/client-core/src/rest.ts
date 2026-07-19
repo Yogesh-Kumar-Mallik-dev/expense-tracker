@@ -38,6 +38,7 @@ import {
   type BudgetInput,
 } from "./contracts";
 import { ApiError, ResponseValidationError } from "./errors";
+import { financialDayRange } from "./financial-time";
 import type { AuthenticationTransport } from "./session";
 
 interface AccessController {
@@ -49,6 +50,7 @@ export class RestExpenseClient implements ExpenseDataClient {
   constructor(
     readonly baseUrl: string,
     private readonly access: AccessController,
+    private readonly financialTimezone: () => string = () => "UTC",
   ) {}
 
   accounts(signal?: AbortSignal, includeArchived = false) {
@@ -133,10 +135,15 @@ export class RestExpenseClient implements ExpenseDataClient {
     });
     if (filters.accountId) query.set("accountId", filters.accountId);
     if (filters.categoryId) query.set("categoryId", filters.categoryId);
-    if (filters.from)
-      query.set("from", new Date(`${filters.from}T00:00:00`).toISOString());
-    if (filters.to)
-      query.set("to", new Date(`${filters.to}T23:59:59.999`).toISOString());
+    if (filters.from || filters.to) {
+      const range = financialDayRange(
+        filters.from ?? filters.to!,
+        filters.to ?? filters.from!,
+        this.financialTimezone(),
+      );
+      if (filters.from) query.set("from", range.from);
+      if (filters.to) query.set("to", range.to);
+    }
     if (filters.search) query.set("search", filters.search);
     return this.collection(
       `/api/transactions?${query}`,
@@ -259,14 +266,16 @@ export class RestExpenseClient implements ExpenseDataClient {
     );
   }
   periodSpending(from: string, to: string) {
+    const range = financialDayRange(from, to, this.financialTimezone());
     return this.request(
-      `/api/reporting/period-spending?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      `/api/reporting/period-spending?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
       z.array(periodSpendingSchema),
     );
   }
   categorySpending(from: string, to: string) {
+    const range = financialDayRange(from, to, this.financialTimezone());
     return this.request(
-      `/api/reporting/category-spending?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      `/api/reporting/category-spending?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
       z.array(categorySpendingSchema),
     );
   }

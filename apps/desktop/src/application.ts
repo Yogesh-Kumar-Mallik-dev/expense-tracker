@@ -105,7 +105,13 @@ export function createDesktopApplication(): ExpenseApplication {
     },
   });
   references.session = session;
-  const remote = new RestExpenseClient(apiUrl, session);
+  const financialTimezone = () => {
+    const state = session.state();
+    return state.status === "authenticated"
+      ? state.session.user.timezone
+      : "UTC";
+  };
+  const remote = new RestExpenseClient(apiUrl, session, financialTimezone);
   references.data = remote;
   runtime.setRemote(remote);
   const data = new OfflineExpenseClient(
@@ -117,6 +123,7 @@ export function createDesktopApplication(): ExpenseApplication {
       return state.session.user.id;
     },
     remote,
+    financialTimezone,
     {
       upload: async (transactionId, file) => {
         const attachmentId = await runtime

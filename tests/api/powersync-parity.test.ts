@@ -197,3 +197,12 @@ test("fresh platform databases do not bootstrap a synchronized User write", asyn
     );
   }
 });
+
+test("PowerSync downloads the financial timezone with the user profile", async () => {
+  const streams = await readFile("../powersync/sync-config.yaml", "utf8");
+  const profileStream = streams.slice(
+    streams.indexOf("my_profile:"),
+    streams.indexOf("my_accounts:"),
+  );
+  assert.match(profileStream, /\btimezone\b/);
+});

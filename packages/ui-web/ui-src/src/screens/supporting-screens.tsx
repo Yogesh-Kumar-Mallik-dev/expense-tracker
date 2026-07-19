@@ -256,7 +256,7 @@ export function ReconciliationScreen({ api }: { api: ExpenseDataClient }) {
           page,
           pageSize: 100,
           accountId,
-          to: new Date(`${statementDate}T23:59:59.999`).toISOString(),
+          to: statementDate,
         });
         rows.push(...result.data);
         if (!result.meta?.hasNext) break;
@@ -856,15 +856,11 @@ export function ReportsScreen({ api }: { api: ExpenseDataClient }) {
     setLoading(true);
     setError("");
     try {
-      const start = new Date(`${from}T00:00:00`).toISOString();
-      const end = new Date(`${to}T23:59:59.999`).toISOString();
-      const comparisonStart = new Date(`${compareFrom}T00:00:00`).toISOString();
-      const comparisonEnd = new Date(`${compareTo}T23:59:59.999`).toISOString();
       const [period, previous, category, reference, history] =
         await Promise.all([
-          api.periodSpending(start, end),
-          api.periodSpending(comparisonStart, comparisonEnd),
-          api.categorySpending(start, end),
+          api.periodSpending(from, to),
+          api.periodSpending(compareFrom, compareTo),
+          api.categorySpending(from, to),
           api.categories(),
           api.netWorthHistory(from, to),
         ]);

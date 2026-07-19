@@ -19,3 +19,9 @@ Device identifiers are scoped by authenticated user rather than installation.
 Login resolves the previous identifier through a normalized-email-to-user
 index; after authentication, the client verifies that identifier against the
 owned device list and replaces stale or foreign values.
+
+Financial date filters are interpreted in the authenticated user's configured
+IANA timezone. `financialDayRange` converts inclusive calendar dates to precise
+UTC instants without using the browser or operating-system timezone and
+preserves 23-hour and 25-hour daylight-saving days. REST and offline clients
+share this conversion.

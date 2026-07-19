@@ -98,6 +98,8 @@ session into the synchronized `User` table because that produces a PowerSync
 `my_profile` stream downloads the row, platform code uses the authenticated
 session as its bootstrap identity. Harmless profile changes remain explicit
 `PATCH` operations; email changes and account deletion use server commands.
+The profile download stream includes `timezone`, and local transaction/report
+date boundaries are produced by the shared client-core financial-time utility.
 
 Attachment rows synchronize metadata only. Binary files use the API's
 presigned object-storage lifecycle. An offline client retains its preassigned

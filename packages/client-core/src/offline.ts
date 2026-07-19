@@ -8,12 +8,14 @@ import type {
   TransactionInput,
 } from "./contracts";
 import type { ExpenseDataClient } from "./application";
+import { financialDayRange } from "./financial-time";
 
 export class OfflineExpenseClient implements ExpenseDataClient {
   constructor(
     private readonly services: () => OfflineServices,
     private readonly userId: () => string,
     private readonly remote: ExpenseDataClient,
+    private readonly financialTimezone: () => string = () => "UTC",
     private readonly attachmentQueue?: {
       upload(
         transactionId: string,
@@ -86,15 +88,19 @@ export class OfflineExpenseClient implements ExpenseDataClient {
     await this.local.tags.delete(id, this.user);
   }
   async transactions(filters: TransactionFilters) {
+    const range =
+      filters.from || filters.to
+        ? financialDayRange(
+            filters.from ?? filters.to!,
+            filters.to ?? filters.from!,
+            this.financialTimezone(),
+          )
+        : null;
     const result = await this.local.transactions.page(this.user, {
       ...(filters.accountId ? { accountId: filters.accountId } : {}),
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
-      ...(filters.from
-        ? { from: new Date(`${filters.from}T00:00:00`).toISOString() }
-        : {}),
-      ...(filters.to
-        ? { to: new Date(`${filters.to}T23:59:59.999`).toISOString() }
-        : {}),
+      ...(filters.from && range ? { from: range.from } : {}),
+      ...(filters.to && range ? { to: range.to } : {}),
       ...(filters.search ? { search: filters.search } : {}),
       offset: (filters.page - 1) * filters.pageSize,
       limit: filters.pageSize,
@@ -167,13 +173,23 @@ export class OfflineExpenseClient implements ExpenseDataClient {
     };
   }
   async periodSpending(from: string, to: string) {
+    const range = financialDayRange(from, to, this.financialTimezone());
     return {
-      data: await this.local.reporting.periodSpending(this.user, from, to),
+      data: await this.local.reporting.periodSpending(
+        this.user,
+        range.from,
+        range.to,
+      ),
     };
   }
   async categorySpending(from: string, to: string) {
+    const range = financialDayRange(from, to, this.financialTimezone());
     return {
-      data: await this.local.reporting.categorySpending(this.user, from, to),
+      data: await this.local.reporting.categorySpending(
+        this.user,
+        range.from,
+        range.to,
+      ),
     };
   }
   async netWorthHistory(from: string, to: string) {
