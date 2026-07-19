@@ -8,7 +8,7 @@ model RefreshToken {
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId, userId], references: [id, userId], onDelete: Cascade)
 
   @@index([userId, expiresAt])
   @@index([deviceId])

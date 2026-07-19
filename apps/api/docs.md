@@ -65,6 +65,12 @@ Refresh tokens have a 30-day lifetime. Only their SHA-256 hashes are stored in
 PostgreSQL. Refreshing revokes the presented token and issues a new token pair,
 preventing normal replay of an already-used refresh token.
 
+An optional login `deviceId` is retained only when the active device belongs to
+the same user. Foreign, deleted, or stale identifiers are ignored. PostgreSQL
+also enforces the refresh-token relationship through the composite
+`(deviceId, userId)` key, preventing cross-user device sessions even if route
+validation regresses.
+
 Logout requires both an access token and the refresh token to revoke. Profile
 deletion writes a `deletedAt` tombstone; subsequent access-token checks reject
 that user.

@@ -32,7 +32,22 @@ export async function requireUser(request: Request) {
   return user.id;
 }
 
-type TokenClient = Pick<typeof prisma, "refreshToken">;
+type TokenClient = Pick<typeof prisma, "refreshToken" | "device">;
+
+export async function ownedDeviceId(
+  db: TokenClient,
+  userId: string,
+  deviceId?: string | null,
+) {
+  z.uuid().parse(userId);
+  if (!deviceId) return null;
+  z.uuid().parse(deviceId);
+  const device = await db.device.findFirst({
+    where: { id: deviceId, userId, deletedAt: null },
+    select: { id: true },
+  });
+  return device?.id ?? null;
+}
 
 export async function issueTokens(
   userId: string,
@@ -48,6 +63,7 @@ async function issueTokensWithClient(
   deviceId?: string | null,
 ) {
   z.uuid().parse(userId);
+  const ownedDevice = await ownedDeviceId(db, userId, deviceId);
   const now = Math.floor(Date.now() / 1000);
   const refreshId = randomUUID();
   const configuration = env();
@@ -68,7 +84,7 @@ async function issueTokensWithClient(
     data: {
       id: refreshId,
       userId,
-      ...(deviceId !== undefined ? { deviceId } : {}),
+      ...(ownedDevice ? { deviceId: ownedDevice } : {}),
       tokenHash: hashToken(refreshToken),
       expiresAt: new Date((now + REFRESH_SECONDS) * 1000),
     },

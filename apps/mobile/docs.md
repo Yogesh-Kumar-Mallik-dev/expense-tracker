@@ -5,8 +5,10 @@ Status: Expo SDK 57 mobile composition implemented.
 The mobile client initializes
 `@expense-tracker/db-offline/driver/mobile`, construct domain services with the
 offline adapters, and synchronize through the backend after authentication.
-Refresh credentials and the stable device identifier live in Expo SecureStore;
-access credentials remain in memory.
+Refresh credentials and per-user device identifiers live in Expo SecureStore;
+access credentials remain in memory. The email index selects only the previous
+user ID; the device key itself is `expense-tracker.device-id.<userId>` and is
+verified against the authenticated device list.
 
 The native SQLite dependency requires an Expo development or native build;
 Expo Go is not supported. Secure tokens belong in platform credential storage,

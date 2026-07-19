@@ -12,6 +12,32 @@ import { MobileOfflineRuntime } from "./offline";
 
 const REFRESH_KEY = "expense-tracker.refresh-token";
 const DEVICE_KEY = "expense-tracker.device-id";
+const DEVICE_USERS_KEY = "expense-tracker.device-users";
+
+function deviceKey(userId: string) {
+  return `${DEVICE_KEY}.${userId}`;
+}
+
+async function deviceUsers(): Promise<Record<string, string>> {
+  try {
+    return JSON.parse(
+      (await SecureStore.getItemAsync(DEVICE_USERS_KEY)) ?? "{}",
+    ) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+async function rememberDeviceUser(email: string, userId: string) {
+  await SecureStore.setItemAsync(
+    DEVICE_USERS_KEY,
+    JSON.stringify({
+      ...(await deviceUsers()),
+      [email.toLowerCase()]: userId,
+    }),
+    { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY },
+  );
+}
 
 class MobileCredentialStore implements SessionCredentialStore {
   read() {
@@ -44,7 +70,12 @@ export function createMobileApplication(): ExpenseApplication {
   const authentication = new RestAuthenticationTransport(
     apiUrl,
     "direct",
-    () => SecureStore.getItemAsync(DEVICE_KEY),
+    async (email) => {
+      const userId = (await deviceUsers())[email];
+      return userId
+        ? SecureStore.getItemAsync(deviceKey(userId))
+        : Promise.resolve(null);
+    },
     () => {
       const state = references.session?.state();
       return state?.status === "authenticated" ? state.session.user : null;
@@ -55,14 +86,20 @@ export function createMobileApplication(): ExpenseApplication {
     credentials: new MobileCredentialStore(),
     localDatabase: runtime,
     sync: runtime,
-    registerDevice: async () => {
-      if (await SecureStore.getItemAsync(DEVICE_KEY)) return;
+    registerDevice: async (session) => {
+      await rememberDeviceUser(session.user.email, session.user.id);
+      const key = deviceKey(session.user.id);
+      const existingId = await SecureStore.getItemAsync(key);
+      if (existingId && references.remote) {
+        const owned = await references.remote.devices();
+        if (owned.data.some((device) => device.id === existingId)) return;
+      }
       const result = await references.remote?.registerDevice(
         `${Platform.OS} mobile`,
         Platform.OS === "ios" ? "IOS" : "ANDROID",
       );
       if (result)
-        await SecureStore.setItemAsync(DEVICE_KEY, result.data.id, {
+        await SecureStore.setItemAsync(key, result.data.id, {
           keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         });
     },

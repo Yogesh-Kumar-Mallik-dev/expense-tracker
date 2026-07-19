@@ -543,14 +543,14 @@ export class RestAuthenticationTransport implements AuthenticationTransport {
   constructor(
     private readonly baseUrl: string,
     private readonly mode: "direct" | "bff" = "direct",
-    private readonly deviceId?: () => Promise<string | null>,
+    private readonly deviceId?: (email: string) => Promise<string | null>,
     private readonly currentUser?: () => User | null,
   ) {}
   async login(email: string, password: string) {
     return this.auth("login", {
       email,
       password,
-      deviceId: (await this.deviceId?.()) ?? undefined,
+      deviceId: (await this.deviceId?.(email.toLowerCase())) ?? undefined,
     });
   }
   register(input: RegistrationInput) {

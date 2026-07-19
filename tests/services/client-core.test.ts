@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ApplicationSessionController,
   MemoryCredentialStore,
+  RestAuthenticationTransport,
   stableUserDatabaseIdentity,
   type AuthenticationTransport,
   type Session,
@@ -86,4 +87,32 @@ test("per-user database identities are stable and isolated", async () => {
   assert.equal(first, repeated);
   assert.notEqual(first, second);
   assert.match(first, /^expense-tracker-[a-f0-9]{24}\.db$/);
+});
+
+test("login resolves a device through the normalized user identity", async () => {
+  const previousFetch = globalThis.fetch;
+  let resolvedEmail = "";
+  let requestBody: Record<string, unknown> = {};
+  globalThis.fetch = async (_input, init) => {
+    requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return new Response(JSON.stringify({ data: session }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  try {
+    const transport = new RestAuthenticationTransport(
+      "https://api.example.test",
+      "direct",
+      async (email) => {
+        resolvedEmail = email;
+        return "00000000-0000-4000-8000-000000000003";
+      },
+    );
+    await transport.login("Person@Example.COM", "password");
+    assert.equal(resolvedEmail, "person@example.com");
+    assert.equal(requestBody.deviceId, "00000000-0000-4000-8000-000000000003");
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
 });

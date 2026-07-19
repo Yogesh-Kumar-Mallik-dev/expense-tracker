@@ -53,6 +53,10 @@ Most records belong to a user. Repository reads, updates, and deletes accept a
 Authentication and authorization still belong in the service or route layer;
 repositories do not determine the current user.
 
+Refresh-token device ownership is additionally enforced by a composite foreign
+key from `(deviceId, userId)` to `Device(id, userId)`. The migration clears any
+legacy mismatched association before enabling the constraint.
+
 All synced models use nullable `deletedAt` tombstones. Repository delete methods
 perform idempotent updates; no affected row means the record was already
 deleted, absent, or not owned by the provided user. Normal reads exclude

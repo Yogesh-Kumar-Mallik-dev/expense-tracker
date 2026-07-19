@@ -12,6 +12,29 @@ import { ExpenseApp } from "@expense-tracker/ui-web";
 import { WebOfflineRuntime } from "../src/bootstrap/offline";
 
 const DEVICE_KEY = "expense-tracker.web-device-id";
+const DEVICE_USERS_KEY = "expense-tracker.web-device-users";
+
+function deviceKey(userId: string) {
+  return `${DEVICE_KEY}.${userId}`;
+}
+
+function deviceUsers(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(DEVICE_USERS_KEY) ?? "{}") as Record<
+      string,
+      string
+    >;
+  } catch {
+    return {};
+  }
+}
+
+function rememberDeviceUser(email: string, userId: string) {
+  localStorage.setItem(
+    DEVICE_USERS_KEY,
+    JSON.stringify({ ...deviceUsers(), [email.toLowerCase()]: userId }),
+  );
+}
 
 function createWebApplication(): ExpenseApplication {
   const references: {
@@ -23,19 +46,30 @@ function createWebApplication(): ExpenseApplication {
     return references.session;
   });
   const session = new ApplicationSessionController({
-    transport: new RestAuthenticationTransport("/backend", "bff", async () =>
-      localStorage.getItem(DEVICE_KEY),
+    transport: new RestAuthenticationTransport(
+      "/backend",
+      "bff",
+      async (email) => {
+        const userId = deviceUsers()[email];
+        return userId ? localStorage.getItem(deviceKey(userId)) : null;
+      },
     ),
     localDatabase: runtime,
     sync: runtime,
-    registerDevice: async () => {
-      if (localStorage.getItem(DEVICE_KEY)) return;
+    registerDevice: async (session) => {
+      rememberDeviceUser(session.user.email, session.user.id);
       if (!references.remote) return;
+      const key = deviceKey(session.user.id);
+      const existingId = localStorage.getItem(key);
+      if (existingId) {
+        const owned = await references.remote.devices();
+        if (owned.data.some((device) => device.id === existingId)) return;
+      }
       const device = await references.remote.registerDevice(
         navigator.platform || "Web browser",
         "WEB",
       );
-      localStorage.setItem(DEVICE_KEY, device.data.id);
+      localStorage.setItem(key, device.data.id);
     },
   });
   references.session = session;

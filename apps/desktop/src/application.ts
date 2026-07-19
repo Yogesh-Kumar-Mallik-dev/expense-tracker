@@ -10,7 +10,30 @@ import {
 import { DesktopOfflineRuntime } from "./offline";
 
 const DEVICE_KEY = "expense-tracker.desktop-device-id";
+const DEVICE_USERS_KEY = "expense-tracker.desktop-device-users";
 const DEVELOPMENT_REFRESH_KEY = "expense-tracker.desktop-refresh-token";
+
+function deviceKey(userId: string) {
+  return `${DEVICE_KEY}.${userId}`;
+}
+
+function deviceUsers(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(DEVICE_USERS_KEY) ?? "{}") as Record<
+      string,
+      string
+    >;
+  } catch {
+    return {};
+  }
+}
+
+function rememberDeviceUser(email: string, userId: string) {
+  localStorage.setItem(
+    DEVICE_USERS_KEY,
+    JSON.stringify({ ...deviceUsers(), [email.toLowerCase()]: userId }),
+  );
+}
 
 function runsInsideTauri() {
   return (
@@ -51,7 +74,10 @@ export function createDesktopApplication(): ExpenseApplication {
   const authentication = new RestAuthenticationTransport(
     apiUrl,
     "direct",
-    async () => localStorage.getItem(DEVICE_KEY),
+    async (email) => {
+      const userId = deviceUsers()[email];
+      return userId ? localStorage.getItem(deviceKey(userId)) : null;
+    },
     () => {
       const state = references.session?.state();
       return state?.status === "authenticated" ? state.session.user : null;
@@ -62,14 +88,20 @@ export function createDesktopApplication(): ExpenseApplication {
     credentials: new DesktopCredentialStore(),
     localDatabase: runtime,
     sync: runtime,
-    registerDevice: async () => {
-      if (localStorage.getItem(DEVICE_KEY)) return;
+    registerDevice: async (session) => {
+      rememberDeviceUser(session.user.email, session.user.id);
       if (!references.data) return;
+      const key = deviceKey(session.user.id);
+      const existingId = localStorage.getItem(key);
+      if (existingId) {
+        const owned = await references.data.devices();
+        if (owned.data.some((device) => device.id === existingId)) return;
+      }
       const device = await references.data.registerDevice(
         navigator.platform || "Desktop",
         "DESKTOP",
       );
-      localStorage.setItem(DEVICE_KEY, device.data.id);
+      localStorage.setItem(key, device.data.id);
     },
   });
   references.session = session;

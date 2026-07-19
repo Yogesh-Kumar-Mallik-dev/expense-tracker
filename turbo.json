@@ -2,6 +2,7 @@
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
+    "ACCESS_TOKEN_SECRET",
     "DATABASE_URL",
     "API_BASE_URL",
     "CORS_ORIGINS",
@@ -11,6 +12,7 @@
     "NODE_ENV",
     "NO_COLOR",
     "RETENTION_JOB_SECRET",
+    "REFRESH_TOKEN_SECRET",
     "TAURI_DEV_HOST",
     "TELEMETRY_INGEST_TOKEN",
     "TELEMETRY_INGEST_URL",

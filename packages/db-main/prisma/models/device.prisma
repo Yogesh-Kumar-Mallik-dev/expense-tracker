@@ -18,5 +18,6 @@ model Device {
   refreshTokens RefreshToken[]
   syncState     SyncState?
 
+  @@unique([id, userId])
   @@index([userId])
 }
