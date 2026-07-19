@@ -2,12 +2,20 @@ import { prisma } from "@expense-tracker/db-main";
 import { requireUser } from "../../../src/auth";
 import { body, ok, route } from "../../../src/http";
 import { createSchedule, materializeDueOccurrences } from "../../../src/phase4";
+import { financialDateSchema, parseQuery } from "../../../src/query";
+import { z } from "zod";
 
 export const GET = route(async (request: Request) => {
   const userId = await requireUser(request);
-  const through =
-    new URL(request.url).searchParams.get("through") ??
-    new Date().toISOString().slice(0, 10);
+  const through = parseQuery(
+    z.object({
+      through: financialDateSchema.default(
+        new Date().toISOString().slice(0, 10),
+      ),
+    }),
+    new URL(request.url),
+    ["through"],
+  ).through;
   await materializeDueOccurrences(userId, through);
   return ok(
     await prisma.transactionSchedule.findMany({

@@ -41,6 +41,17 @@ test("pagination rejects invalid and excessive page sizes", () => {
     (error) =>
       error instanceof HttpError && error.code === "INVALID_PAGINATION",
   );
+  assert.throws(
+    () =>
+      paginate(
+        [],
+        new URL(
+          "https://api.example.test/api/accounts?page=999999999999999999999",
+        ),
+      ),
+    (error) =>
+      error instanceof HttpError && error.code === "INVALID_PAGINATION",
+  );
 });
 
 test("authentication routes use the strict rate-limit policy", () => {

@@ -22,7 +22,16 @@ function positiveInteger(value: string | null, fallback: number, name: string) {
       [name],
     );
   }
-  return Number(value);
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed)) {
+    throw new HttpError(
+      400,
+      "INVALID_PAGINATION",
+      `${name} must be a safe positive integer`,
+      [name],
+    );
+  }
+  return parsed;
 }
 
 export function paginationParams(url: URL) {

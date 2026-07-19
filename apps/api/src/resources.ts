@@ -11,6 +11,14 @@ import {
   validateAttachmentRelationship,
   validateTransactionRelationships,
 } from "./domain-authorization";
+import {
+  attachmentQuerySchema,
+  categoryOptionsQuerySchema,
+  financialPeriodQuerySchema,
+  parseQuery,
+  resourceOptionsQuerySchema,
+  transactionQuerySchema,
+} from "./query";
 
 export type ResourceName =
   | "accounts"
@@ -31,55 +39,55 @@ export async function listResource(name: ResourceName, request: Request) {
     return ok(result.data, 200, result.meta);
   };
   switch (name) {
-    case "accounts":
+    case "accounts": {
+      const query = parseQuery(resourceOptionsQuerySchema, url, [
+        "includeArchived",
+      ]);
       return paginated(
-        await services.accounts.list(
-          userId,
-          url.searchParams.get("includeArchived") === "true",
-        ),
+        await services.accounts.list(userId, query.includeArchived),
       );
-    case "categories":
+    }
+    case "categories": {
+      const query = parseQuery(categoryOptionsQuerySchema, url, [
+        "type",
+        "includeArchived",
+      ]);
       return paginated(
         await services.categories.list(
           userId,
-          (url.searchParams.get("type") || undefined) as
-            | "EXPENSE"
-            | "INCOME"
-            | undefined,
-          url.searchParams.get("includeArchived") === "true",
+          query.type,
+          query.includeArchived,
         ),
       );
+    }
     case "tags":
       return paginated(await services.tags.list(userId));
     case "budgets": {
-      const from = url.searchParams.get("from");
-      const to = url.searchParams.get("to");
-      if (!from || !to)
-        throw new HttpError(
-          400,
-          "MISSING_PERIOD",
-          "from and to query parameters are required",
-        );
-      return paginated(await services.budgets.listForPeriod(userId, from, to));
+      const query = parseQuery(
+        financialPeriodQuerySchema,
+        url,
+        ["from", "to"],
+        "INVALID_PERIOD",
+      );
+      return paginated(
+        await services.budgets.listForPeriod(userId, query.from, query.to),
+      );
     }
     case "transactions": {
       const { page, pageSize } = paginationParams(url);
+      const query = parseQuery(transactionQuerySchema, url, [
+        "accountId",
+        "categoryId",
+        "from",
+        "to",
+        "search",
+      ]);
       const result = await services.transactions.page(userId, {
-        ...(url.searchParams.get("accountId")
-          ? { accountId: url.searchParams.get("accountId")! }
-          : {}),
-        ...(url.searchParams.get("categoryId")
-          ? { categoryId: url.searchParams.get("categoryId")! }
-          : {}),
-        ...(url.searchParams.get("from")
-          ? { from: url.searchParams.get("from")! }
-          : {}),
-        ...(url.searchParams.get("to")
-          ? { to: url.searchParams.get("to")! }
-          : {}),
-        ...(url.searchParams.get("search")
-          ? { search: url.searchParams.get("search")! }
-          : {}),
+        ...(query.accountId ? { accountId: query.accountId } : {}),
+        ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+        ...(query.from ? { from: query.from } : {}),
+        ...(query.to ? { to: query.to } : {}),
+        ...(query.search ? { search: query.search } : {}),
         offset: (page - 1) * pageSize,
         limit: pageSize,
       });
@@ -95,13 +103,9 @@ export async function listResource(name: ResourceName, request: Request) {
       });
     }
     case "attachments": {
-      const transactionId = url.searchParams.get("transactionId");
-      if (!transactionId)
-        throw new HttpError(
-          400,
-          "MISSING_TRANSACTION",
-          "transactionId is required",
-        );
+      const { transactionId } = parseQuery(attachmentQuerySchema, url, [
+        "transactionId",
+      ]);
       return paginated(
         await services.attachments.listByTransaction(transactionId, userId),
       );

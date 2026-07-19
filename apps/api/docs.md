@@ -294,6 +294,18 @@ download revalidates the stored prefix before signing a URL. `storageKey` is
 never client-writable through PowerSync and remains immutable after completion.
 The default size limit is 10 MiB.
 
+## Query validation
+
+URL query parameters are parsed before service or persistence calls. Shared
+contracts validate UUID filters, ISO instants, financial calendar dates,
+ordered periods, category types, archive flags, search length, and safe
+pagination integers. Invalid values return `400` with a stable error code and
+field list; malformed UUIDs and dates must never reach Prisma.
+
+Transaction search is limited to 200 trimmed characters. Financial budget and
+net-worth periods use `YYYY-MM-DD`; transaction and spending-report boundaries
+use ISO instants generated from the user's configured financial timezone.
+
 Synchronized metadata tombstones do not immediately remove binary objects.
 Production operations should run delayed garbage collection only after the
 tombstone-retention window proves every client has observed deletion.
