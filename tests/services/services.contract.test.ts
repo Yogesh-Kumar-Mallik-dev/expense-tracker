@@ -18,6 +18,29 @@ const ACCOUNT = "00000000-0000-4000-8000-000000000002";
 const TX = "00000000-0000-4000-8000-000000000003";
 const clock = () => "2026-07-16T00:00:00.000Z";
 
+function expenseRecord(
+  id: string,
+  currency: string,
+  occurredAt = clock(),
+): TransactionRecord {
+  return {
+    id,
+    userId: USER,
+    accountId: ACCOUNT,
+    transferAccountId: null,
+    categoryId: null,
+    type: "EXPENSE",
+    amount: "4.2500",
+    currency,
+    description: null,
+    note: null,
+    occurredAt,
+    createdAt: clock(),
+    updatedAt: clock(),
+    deletedAt: null,
+  };
+}
+
 class MemoryAccountRepository implements AccountRepositoryPort {
   rows = new Map<string, AccountRecord>();
   async create(v: AccountRecord) {
@@ -507,6 +530,114 @@ test("net-worth history preserves currencies and ignores transfers", async () =>
     [
       { date: "2026-07-01", currency: "USD", balance: "10.0000" },
       { date: "2026-07-02", currency: "USD", balance: "7.5000" },
+    ],
+  );
+});
+
+test("budget usage classifies midnight transactions in the financial timezone", async () => {
+  const budgetId = "00000000-0000-4000-8000-000000000030";
+  const categoryId = "00000000-0000-4000-8000-000000000031";
+  let queriedFrom = "";
+  const reports = new ReportingService({
+    listAccounts: async () => [],
+    listTransactions: async (_user, from) => {
+      queriedFrom = from ?? "";
+      return [
+        {
+          ...expenseRecord("00000000-0000-4000-8000-000000000032", "INR"),
+          categoryId,
+          occurredAt: "2026-07-18T18:30:00.000Z",
+        },
+        {
+          ...expenseRecord("00000000-0000-4000-8000-000000000033", "INR"),
+          categoryId,
+          occurredAt: "2026-07-18T18:29:59.999Z",
+        },
+      ];
+    },
+    listBudgets: async () => [
+      {
+        id: budgetId,
+        userId: USER,
+        name: "Food",
+        amount: "10.0000",
+        currency: "INR",
+        startsOn: "2026-07-19",
+        endsOn: "2026-07-19",
+        mode: "SPENDING_LIMIT",
+        rolloverPolicy: "NONE",
+        createdAt: clock(),
+        updatedAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listBudgetCategories: async () => [
+      {
+        id: "00000000-0000-4000-8000-000000000034",
+        budgetId,
+        categoryId,
+        createdAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
+  });
+
+  const [usage] = await reports.budgetUsage(
+    USER,
+    "2026-07-19",
+    "2026-07-19",
+    "Asia/Kolkata",
+  );
+  assert.equal(queriedFrom, "2026-07-18T18:30:00.000Z");
+  assert.equal(usage?.spent, "4.2500");
+});
+
+test("net-worth history uses financial day cutoffs across DST", async () => {
+  const reports = new ReportingService({
+    listAccounts: async () => [
+      {
+        id: ACCOUNT,
+        userId: USER,
+        name: "Cash",
+        type: "CASH",
+        currency: "USD",
+        openingBalance: "10.0000",
+        color: null,
+        icon: null,
+        isArchived: false,
+        createdAt: "2026-03-01T00:00:00.000Z",
+        updatedAt: clock(),
+        deletedAt: null,
+      },
+    ],
+    listTransactions: async () => [
+      {
+        ...expenseRecord(TX, "USD"),
+        occurredAt: "2026-03-09T03:59:59.999Z",
+      },
+      {
+        ...expenseRecord("00000000-0000-4000-8000-000000000035", "USD"),
+        occurredAt: "2026-03-09T04:00:00.000Z",
+      },
+    ],
+    listBudgets: async () => [],
+    listBudgetCategories: async () => [],
+    listEnvelopeAllocations: async () => [],
+    listBudgetTransfers: async () => [],
+  });
+
+  assert.deepEqual(
+    await reports.netWorthHistory(
+      USER,
+      "2026-03-08",
+      "2026-03-09",
+      "America/New_York",
+    ),
+    [
+      { date: "2026-03-08", currency: "USD", balance: "5.7500" },
+      { date: "2026-03-09", currency: "USD", balance: "1.5000" },
     ],
   );
 });

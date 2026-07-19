@@ -4,6 +4,7 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   ACCESS_TOKEN_SECRET: z.string().min(32),
   REFRESH_TOKEN_SECRET: z.string().min(32),
+  REDIS_URL: z.string().min(1).optional(),
   POWERSYNC_URL: z.url().optional(),
   POWERSYNC_PRIVATE_KEY_BASE64: z.string().min(1).optional(),
   POWERSYNC_KEY_ID: z.string().min(1).default("expense-tracker-powersync-1"),

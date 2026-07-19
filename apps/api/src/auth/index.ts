@@ -89,7 +89,12 @@ async function issueTokensWithClient(
       expiresAt: new Date((now + REFRESH_SECONDS) * 1000),
     },
   });
-  return { accessToken, refreshToken, expiresIn: ACCESS_SECONDS };
+  return {
+    accessToken,
+    refreshToken,
+    expiresIn: ACCESS_SECONDS,
+    deviceId: ownedDevice,
+  };
 }
 
 export async function rotateRefreshToken(token: string) {

@@ -142,6 +142,48 @@ test("authoritative upload rejects another user's relationship before write", as
   assert.equal(value.rows().get(ACCOUNT)?.userId, OTHER_USER);
 });
 
+test("PATCH returns the same ownership-safe error for missing and foreign IDs", async () => {
+  const patch = (id: string) =>
+    uploadSchema.parse({
+      operations: [
+        {
+          op: "PATCH",
+          table: "Account",
+          id,
+          data: { name: "Renamed" },
+        },
+      ],
+    });
+  const foreignId = ACCOUNT;
+  const missingId = "00000000-0000-4000-8000-000000000009";
+  const value = database([
+    {
+      id: foreignId,
+      userId: OTHER_USER,
+      name: "Private",
+      type: "CASH",
+      currency: "INR",
+      openingBalance: "0.0000",
+      color: null,
+      icon: null,
+      isArchived: false,
+      createdAt: new Date(NOW),
+      updatedAt: new Date(NOW),
+      deletedAt: null,
+    },
+  ]);
+
+  for (const id of [foreignId, missingId])
+    await assert.rejects(
+      applyUploadWithClient(value.client as never, patch(id), USER),
+      (error) =>
+        error instanceof HttpError &&
+        error.status === 403 &&
+        error.code === "SYNC_OWNERSHIP_VIOLATION" &&
+        error.message === "Record is not owned by this user",
+    );
+});
+
 test("authoritative upload rolls back the complete CRUD batch", async () => {
   const blockedId = "00000000-0000-4000-8000-000000000004";
   const createdId = "00000000-0000-4000-8000-000000000005";

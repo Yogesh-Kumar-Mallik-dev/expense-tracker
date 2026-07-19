@@ -65,6 +65,78 @@ export interface NetWorthPoint {
   currency: string;
   balance: string;
 }
+
+const FINANCIAL_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function financialDayRange(from: string, to: string, timezone: string) {
+  const start = zonedMidnight(from, timezone);
+  const endExclusive = zonedMidnight(nextFinancialDate(to), timezone);
+  return {
+    from: new Date(start).toISOString(),
+    to: new Date(endExclusive - 1).toISOString(),
+  };
+}
+
+function zonedMidnight(value: string, timezone: string) {
+  const [year, month, day] = financialDateParts(value);
+  const target = Date.UTC(year, month - 1, day);
+  let result = target;
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const values = Object.fromEntries(
+      formatter
+        .formatToParts(new Date(result))
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, Number(part.value)]),
+    );
+    const represented = Date.UTC(
+      values.year!,
+      values.month! - 1,
+      values.day!,
+      values.hour!,
+      values.minute!,
+      values.second!,
+    );
+    const adjusted = result + (target - represented);
+    if (adjusted === result) return result;
+    result = adjusted;
+  }
+  return result;
+}
+
+function financialDateParts(value: string): [number, number, number] {
+  const match = FINANCIAL_DATE.exec(value);
+  if (!match) throw new Error(`Invalid financial date: ${value}`);
+  const result: [number, number, number] = [
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+  ];
+  if (
+    new Date(Date.UTC(result[0], result[1] - 1, result[2]))
+      .toISOString()
+      .slice(0, 10) !== value
+  )
+    throw new Error(`Invalid financial date: ${value}`);
+  return result;
+}
+
+function nextFinancialDate(value: string) {
+  const [year, month, day] = financialDateParts(value);
+  return new Date(Date.UTC(year, month - 1, day + 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
 export class ReportingService {
   constructor(private readonly repository: ReportingRepositoryPort) {}
   // Concurrency note: Safe computed-on-read projection; balances are never written and each visible transaction contributes independently.
@@ -197,14 +269,12 @@ export class ReportingService {
     userId: string,
     from: string,
     to: string,
+    timezone = "UTC",
   ): Promise<NetWorthPoint[]> {
+    const completeRange = financialDayRange(from, to, timezone);
     const [accounts, transactions] = await Promise.all([
       this.repository.listAccounts(userId),
-      this.repository.listTransactions(
-        userId,
-        undefined,
-        `${to}T23:59:59.999Z`,
-      ),
+      this.repository.listTransactions(userId, undefined, completeRange.to),
     ]);
     const start = new Date(`${from}T00:00:00Z`);
     const end = new Date(`${to}T00:00:00Z`);
@@ -224,7 +294,7 @@ export class ReportingService {
       cursor = new Date(cursor.valueOf() + 86_400_000)
     ) {
       const date = cursor.toISOString().slice(0, 10);
-      const endOfDay = `${date}T23:59:59.999Z`;
+      const endOfDay = financialDayRange(date, date, timezone).to;
       const totals = new Map<string, bigint>();
       for (const account of accounts) {
         if (account.createdAt > endOfDay) continue;
@@ -260,6 +330,7 @@ export class ReportingService {
     userId: string,
     from: string,
     to: string,
+    timezone = "UTC",
   ): Promise<BudgetUsage[]> {
     const budgets = await this.repository.listBudgets(userId, from, to);
     const earliestStart = budgets.reduce(
@@ -267,10 +338,12 @@ export class ReportingService {
         budget.startsOn < earliest ? budget.startsOn : earliest,
       from,
     );
+    const transactionRange = financialDayRange(earliestStart, to, timezone);
+    const currentRange = financialDayRange(from, to, timezone);
     const transactions = await this.repository.listTransactions(
       userId,
-      earliestStart,
-      to,
+      transactionRange.from,
+      transactionRange.to,
     );
     const budgetIds = budgets.map((b) => b.id);
     const [assignments, allocations, transfers] = await Promise.all([
@@ -298,7 +371,7 @@ export class ReportingService {
           excluded.push(transaction.id);
           continue;
         }
-        if (transaction.occurredAt.slice(0, 10) < from)
+        if (transaction.occurredAt < currentRange.from)
           previousSpent += parseMoney(transaction.amount);
         else spent += parseMoney(transaction.amount);
       }

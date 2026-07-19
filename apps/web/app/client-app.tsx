@@ -53,6 +53,11 @@ function createWebApplication(): ExpenseApplication {
         const userId = deviceUsers()[email];
         return userId ? localStorage.getItem(deviceKey(userId)) : null;
       },
+      undefined,
+      () => ({
+        deviceName: navigator.platform || "Web browser",
+        devicePlatform: "WEB",
+      }),
     ),
     localDatabase: runtime,
     sync: runtime,
@@ -60,6 +65,10 @@ function createWebApplication(): ExpenseApplication {
       rememberDeviceUser(session.user.email, session.user.id);
       if (!references.remote) return;
       const key = deviceKey(session.user.id);
+      if (session.tokens.deviceId) {
+        localStorage.setItem(key, session.tokens.deviceId);
+        return;
+      }
       const existingId = localStorage.getItem(key);
       if (existingId) {
         const owned = await references.remote.devices();

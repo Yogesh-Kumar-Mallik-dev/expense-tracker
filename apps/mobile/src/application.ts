@@ -80,6 +80,10 @@ export function createMobileApplication(): ExpenseApplication {
       const state = references.session?.state();
       return state?.status === "authenticated" ? state.session.user : null;
     },
+    () => ({
+      deviceName: `${Platform.OS} mobile`,
+      devicePlatform: Platform.OS === "ios" ? "IOS" : "ANDROID",
+    }),
   );
   const session = new ApplicationSessionController({
     transport: authentication,
@@ -89,6 +93,12 @@ export function createMobileApplication(): ExpenseApplication {
     registerDevice: async (session) => {
       await rememberDeviceUser(session.user.email, session.user.id);
       const key = deviceKey(session.user.id);
+      if (session.tokens.deviceId) {
+        await SecureStore.setItemAsync(key, session.tokens.deviceId, {
+          keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        });
+        return;
+      }
       const existingId = await SecureStore.getItemAsync(key);
       if (existingId && references.remote) {
         const owned = await references.remote.devices();

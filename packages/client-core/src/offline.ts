@@ -157,7 +157,7 @@ export class OfflineExpenseClient implements ExpenseDataClient {
       : this.remote.uploadAttachment(id, file);
   }
   async deleteAttachment(id: string) {
-    await this.local.attachments.delete(id, this.user);
+    await this.remote.deleteAttachment(id);
   }
   attachmentDownload(id: string) {
     return this.remote.attachmentDownload(id);
@@ -169,7 +169,12 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   }
   async budgetUsage(from: string, to: string) {
     return {
-      data: await this.local.reporting.budgetUsage(this.user, from, to),
+      data: await this.local.reporting.budgetUsage(
+        this.user,
+        from,
+        to,
+        this.financialTimezone(),
+      ),
     };
   }
   async periodSpending(from: string, to: string) {
@@ -194,7 +199,12 @@ export class OfflineExpenseClient implements ExpenseDataClient {
   }
   async netWorthHistory(from: string, to: string) {
     return {
-      data: await this.local.reporting.netWorthHistory(this.user, from, to),
+      data: await this.local.reporting.netWorthHistory(
+        this.user,
+        from,
+        to,
+        this.financialTimezone(),
+      ),
     };
   }
   async createBudget(value: BudgetInput) {

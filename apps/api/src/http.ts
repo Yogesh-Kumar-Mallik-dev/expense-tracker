@@ -134,7 +134,7 @@ export function route<T extends unknown[]>(
       trustProxy: process.env.TRUST_PROXY === "true",
     });
     return runWithRequest(scope, async () => {
-      const limit = checkRateLimit(request);
+      const limit = await checkRateLimit(request);
       if (!limit.allowed) {
         const response = Response.json(
           {

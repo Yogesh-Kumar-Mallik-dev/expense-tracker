@@ -11,6 +11,7 @@ const refreshEnvelope = z.object({
       accessToken: z.string().min(1),
       refreshToken: z.string().min(1),
       expiresIn: z.number().positive(),
+      deviceId: z.string().uuid().nullable().optional(),
     }),
   }),
 });
@@ -81,6 +82,7 @@ export async function handleSessionAction(request: Request, action: string) {
         tokens: {
           accessToken: parsed.data.data.tokens.accessToken,
           expiresIn: parsed.data.data.tokens.expiresIn,
+          deviceId: parsed.data.data.tokens.deviceId,
         },
       },
     });
@@ -103,6 +105,7 @@ export async function handleSessionAction(request: Request, action: string) {
         tokens: {
           accessToken: session.data.tokens.accessToken,
           expiresIn: session.data.tokens.expiresIn,
+          deviceId: session.data.tokens.deviceId,
         },
       },
     },
@@ -132,14 +135,19 @@ function callApi(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   headers.set("accept", "application/json");
   if (init.body) headers.set("content-type", "application/json");
-  return fetch(`${apiBaseUrl()}${path}`, { ...init, headers, cache: "no-store" });
+  return fetch(`${apiBaseUrl()}${path}`, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
 }
 
 async function forward(response: Response) {
   return new Response(await response.arrayBuffer(), {
     status: response.status,
     headers: {
-      "content-type": response.headers.get("content-type") ?? "application/json",
+      "content-type":
+        response.headers.get("content-type") ?? "application/json",
       "X-Request-ID": response.headers.get("X-Request-ID") ?? "",
     },
   });

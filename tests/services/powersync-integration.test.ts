@@ -277,3 +277,22 @@ test("transaction restore uses the authoritative endpoint", async () => {
   await client.restoreTransaction("transaction-1");
   assert.equal(restored, "transaction-1");
 });
+
+test("attachment deletion uses the authoritative endpoint without local CRUD", async () => {
+  let deleted = "";
+  const remote = {
+    deleteAttachment: async (id: string) => {
+      deleted = id;
+    },
+  } as unknown as ExpenseDataClient;
+  const client = new OfflineExpenseClient(
+    () => {
+      throw new Error("attachment deletion must not create local sync CRUD");
+    },
+    () => "user-1",
+    remote,
+  );
+
+  await client.deleteAttachment("attachment-1");
+  assert.equal(deleted, "attachment-1");
+});

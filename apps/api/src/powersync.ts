@@ -290,14 +290,36 @@ function delegate(
 async function validateOperation(
   db: PrismaClient | TransactionClient,
   operation: Operation,
+  userId: string,
 ): Promise<Operation> {
   if (operation.op === "DELETE") return operation;
   const existing =
     operation.op === "PATCH"
       ? ((await delegate(db, operation.table).findFirst({
-          where: { id: operation.id },
+          where:
+            operation.table === "User"
+              ? { id: operation.id }
+              : operation.table === "BudgetCategory" ||
+                  operation.table === "EnvelopeAllocation" ||
+                  operation.table === "BudgetTransfer"
+                ? {
+                    id: operation.id,
+                    budget: { userId, deletedAt: null },
+                  }
+                : operation.table === "TransactionTag"
+                  ? {
+                      id: operation.id,
+                      transaction: { userId, deletedAt: null },
+                    }
+                  : { id: operation.id, userId },
         })) as Record<string, unknown> | null)
       : null;
+  if (operation.op === "PATCH" && !existing)
+    throw new HttpError(
+      403,
+      "SYNC_OWNERSHIP_VIOLATION",
+      "Record is unavailable",
+    );
   const validated = mergeAndValidateSynchronizedRecord(
     operation.table,
     existing,
@@ -324,7 +346,10 @@ async function assertOwned(
       operation.op === "PUT"
         ? null
         : await db.budgetCategory.findFirst({
-            where: { id: operation.id },
+            where: {
+              id: operation.id,
+              budget: { userId, deletedAt: null },
+            },
             select: { budgetId: true, categoryId: true },
           });
     const budgetId = operation.data?.budgetId ?? existing?.budgetId;
@@ -356,7 +381,10 @@ async function assertOwned(
       operation.op === "PUT"
         ? null
         : await delegate(db, operation.table).findFirst({
-            where: { id: operation.id },
+            where: {
+              id: operation.id,
+              budget: { userId, deletedAt: null },
+            },
           });
     const record = existing as Record<string, unknown> | null;
     const budgetId = operation.data?.budgetId ?? record?.budgetId;
@@ -400,7 +428,10 @@ async function assertOwned(
       operation.op === "PUT"
         ? null
         : await db.transactionTag.findFirst({
-            where: { id: operation.id },
+            where: {
+              id: operation.id,
+              transaction: { userId, deletedAt: null },
+            },
             select: { transactionId: true },
           });
     const transactionId =
@@ -424,7 +455,10 @@ async function assertOwned(
       operation.op === "PUT"
         ? null
         : await db.transactionTag.findFirst({
-            where: { id: operation.id },
+            where: {
+              id: operation.id,
+              transaction: { userId, deletedAt: null },
+            },
             select: { tagId: true },
           });
     const tagId = operation.data?.tagId ?? existingTag?.tagId;
@@ -544,8 +578,8 @@ async function applyOperation(
   operation: Operation,
   userId: string,
 ) {
-  const validatedOperation = await validateOperation(db, operation);
-  await assertOwned(db, validatedOperation, userId);
+  await assertOwned(db, operation, userId);
+  const validatedOperation = await validateOperation(db, operation, userId);
   const model = delegate(db, validatedOperation.table);
   if (validatedOperation.op === "DELETE") {
     await model.updateMany({

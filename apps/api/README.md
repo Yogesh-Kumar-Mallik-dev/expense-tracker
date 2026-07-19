@@ -100,6 +100,10 @@ and the maximum is 100. The older `limit` name is accepted as an alias for
 Every API response includes rate-limit headers. Exceeding a policy returns
 `429 Too Many Requests` with `Retry-After`.
 
+Production rate limiting requires `REDIS_URL` and `TRUST_PROXY=true`; the
+trusted ingress must overwrite client-supplied forwarding headers. Development
+falls back to an in-process store.
+
 ## Route groups
 
 | Group           | Routes                                                                                           |

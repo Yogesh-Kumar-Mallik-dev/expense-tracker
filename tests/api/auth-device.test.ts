@@ -41,14 +41,20 @@ test("refresh sessions only retain devices owned by the same user", async () => 
     await ownedDeviceId(owned.client as never, userId, deviceId),
     deviceId,
   );
-  await issueTokens(userId, deviceId, owned.client as never);
+  const tokens = await issueTokens(userId, deviceId, owned.client as never);
   assert.equal(owned.created[0]?.deviceId, deviceId);
+  assert.equal(tokens.deviceId, deviceId);
 
   const foreign = fakeTokenClient(otherUserId);
   assert.equal(
     await ownedDeviceId(foreign.client as never, userId, deviceId),
     null,
   );
-  await issueTokens(userId, deviceId, foreign.client as never);
+  const foreignTokens = await issueTokens(
+    userId,
+    deviceId,
+    foreign.client as never,
+  );
   assert.equal("deviceId" in (foreign.created[0] ?? {}), false);
+  assert.equal(foreignTokens.deviceId, null);
 });

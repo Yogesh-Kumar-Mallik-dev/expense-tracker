@@ -13,6 +13,8 @@ const schema = z.object({
     .length(3)
     .transform((value) => value.toUpperCase())
     .default("USD"),
+  deviceName: z.string().trim().min(1).max(120).default("New device"),
+  devicePlatform: z.enum(["WEB", "DESKTOP", "IOS", "ANDROID"]).default("WEB"),
 });
 
 export const runtime = "nodejs";
@@ -35,7 +37,15 @@ export const POST = route(async (request: Request) => {
         timezone: true,
       },
     });
-    return { user, tokens: await issueTokens(user.id, undefined, tx) };
+    const device = await tx.device.create({
+      data: {
+        userId: user.id,
+        name: input.deviceName,
+        platform: input.devicePlatform,
+      },
+      select: { id: true },
+    });
+    return { user, tokens: await issueTokens(user.id, device.id, tx) };
   });
   return ok(result, 201);
 });

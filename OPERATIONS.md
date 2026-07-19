@@ -95,6 +95,15 @@ Object-storage lifecycle rules must separately delete tombstoned attachment
 objects. Operators must monitor deletion-job failures without logging financial
 content or credentials.
 
+## Shared rate limiting
+
+Production API instances require `REDIS_URL` and `TRUST_PROXY=true`. Redis owns
+the atomic 60-second buckets shared by every instance. The public ingress must
+be the only path to the API and must replace forwarding headers rather than
+append untrusted client values. Deployment smoke tests must confirm that two
+API instances consume the same authentication bucket and return consistent
+`RateLimit-*` headers.
+
 ## Telemetry
 
 Set web and desktop clients to the same-origin `/api/telemetry` proxy and

@@ -554,6 +554,10 @@ export class RestAuthenticationTransport implements AuthenticationTransport {
     private readonly mode: "direct" | "bff" = "direct",
     private readonly deviceId?: (email: string) => Promise<string | null>,
     private readonly currentUser?: () => User | null,
+    private readonly registrationDevice?: () => Pick<
+      RegistrationInput,
+      "deviceName" | "devicePlatform"
+    >,
   ) {}
   async login(email: string, password: string) {
     return this.auth("login", {
@@ -563,7 +567,10 @@ export class RestAuthenticationTransport implements AuthenticationTransport {
     });
   }
   register(input: RegistrationInput) {
-    return this.auth("register", input);
+    return this.auth("register", {
+      ...input,
+      ...this.registrationDevice?.(),
+    });
   }
   async refresh(refreshToken: string | null) {
     if (this.mode === "bff")

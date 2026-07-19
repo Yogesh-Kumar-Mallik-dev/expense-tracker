@@ -82,6 +82,10 @@ export function createDesktopApplication(): ExpenseApplication {
       const state = references.session?.state();
       return state?.status === "authenticated" ? state.session.user : null;
     },
+    () => ({
+      deviceName: navigator.platform || "Desktop",
+      devicePlatform: "DESKTOP",
+    }),
   );
   const session = new ApplicationSessionController({
     transport: authentication,
@@ -92,6 +96,10 @@ export function createDesktopApplication(): ExpenseApplication {
       rememberDeviceUser(session.user.email, session.user.id);
       if (!references.data) return;
       const key = deviceKey(session.user.id);
+      if (session.tokens.deviceId) {
+        localStorage.setItem(key, session.tokens.deviceId);
+        return;
+      }
       const existingId = localStorage.getItem(key);
       if (existingId) {
         const owned = await references.data.devices();

@@ -71,6 +71,10 @@ also enforces the refresh-token relationship through the composite
 `(deviceId, userId)` key, preventing cross-user device sessions even if route
 validation regresses.
 
+Registration creates its device in the same PostgreSQL transaction as the user
+and first refresh token. The response includes that device ID so clients do not
+create a duplicate device after accepting the session.
+
 Logout requires both an access token and the refresh token to revoke. Profile
 deletion writes a `deletedAt` tombstone; subsequent access-token checks reject
 that user.
@@ -156,12 +160,12 @@ cannot bypass pre-authentication protection. Responses include
 equivalent `X-RateLimit-*` compatibility headers. Rejected requests also
 include `Retry-After`.
 
-The current store is process-local and deliberately dependency-free. It is
-useful for local development and a single long-running API instance. A
-multi-instance or serverless production deployment must replace the map with a
-shared atomic store such as Redis while preserving the same policy interface.
-The application must only trust `X-Forwarded-For` when deployed behind a proxy
-that overwrites untrusted forwarding headers.
+Development uses a process-local store. Production requires `REDIS_URL` and
+uses one atomic Redis script to increment the bucket and establish its expiry,
+so all API instances enforce the same window. Production rejects requests when
+Redis is not configured or `TRUST_PROXY` is not enabled. The ingress proxy must
+overwrite untrusted forwarding headers before the application trusts
+`X-Forwarded-For`.
 
 ## Logging and correlation
 
@@ -223,6 +227,8 @@ The upload boundary:
 - rejects direct tombstone timestamps; only `DELETE` may create a tombstone;
 - merges every `PATCH` with the authoritative row and validates the complete
   result through the shared service schemas;
+- loads PATCH targets through owner-scoped relationships before validation, so
+  missing and foreign UUIDs return the same ownership-safe response;
 - validates UUIDs, enums, exact money, lengths, colours, financial dates,
   transfer rules, envelope activity, and device/sync metadata before Prisma;
 - validates category parent ownership, matching type, and cycle freedom;
@@ -305,6 +311,8 @@ field list; malformed UUIDs and dates must never reach Prisma.
 Transaction search is limited to 200 trimmed characters. Financial budget and
 net-worth periods use `YYYY-MM-DD`; transaction and spending-report boundaries
 use ISO instants generated from the user's configured financial timezone.
+Budget usage and every net-worth day cutoff convert those financial dates
+through the profile timezone, including daylight-saving transitions.
 
 Synchronized metadata tombstones do not immediately remove binary objects.
 Production operations should run delayed garbage collection only after the

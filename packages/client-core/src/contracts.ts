@@ -184,6 +184,7 @@ export const tokenSetSchema = z.object({
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1).optional(),
   expiresIn: z.number().positive(),
+  deviceId: z.string().uuid().nullable().optional(),
 });
 export const sessionSchema = z.object({
   user: userSchema,
@@ -260,6 +261,8 @@ export interface RegistrationInput {
   password: string;
   name: string | null;
   currency: string;
+  deviceName?: string;
+  devicePlatform?: "WEB" | "DESKTOP" | "IOS" | "ANDROID";
 }
 export interface TransactionFilters {
   page: number;
