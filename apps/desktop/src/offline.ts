@@ -3,7 +3,6 @@ import {
   createOfflineServices,
   PersistentAttachmentQueue,
   restoreBackupSnapshot,
-  users,
   type OfflineServices,
 } from "@expense-tracker/db-offline";
 import { createDesktopDatabase } from "@expense-tracker/db-offline/driver/desktop";
@@ -74,24 +73,6 @@ export class DesktopOfflineRuntime
     void this.queue.drain();
     const auth = this.session().state();
     if (auth.status === "authenticated") {
-      const now = new Date().toISOString();
-      await client.db
-        .insert(users)
-        .values({
-          ...auth.session.user,
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
-        })
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            email: auth.session.user.email,
-            name: auth.session.user.name,
-            currency: auth.session.user.currency,
-            updatedAt: now,
-          },
-        });
       await invoke("connect_powersync", {
         handle: client.powerSync.rustHandle,
         apiUrl: this.apiUrl,

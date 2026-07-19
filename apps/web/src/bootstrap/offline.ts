@@ -7,7 +7,7 @@ import {
   type OfflineServices,
 } from "@expense-tracker/db-offline";
 import { createWebDatabase } from "@expense-tracker/db-offline/driver/web";
-import { syncConflicts, users } from "@expense-tracker/db-offline";
+import { syncConflicts } from "@expense-tracker/db-offline";
 import type {
   ApplicationSyncState,
   LocalDatabaseLifecycle,
@@ -69,27 +69,6 @@ export class WebOfflineRuntime
     );
     window.addEventListener("online", this.onlineHandler);
     void this.queue.drain();
-    const auth = this.session().state();
-    if (auth.status === "authenticated") {
-      const now = new Date().toISOString();
-      await client.db
-        .insert(users)
-        .values({
-          ...auth.session.user,
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
-        })
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            email: auth.session.user.email,
-            name: auth.session.user.name,
-            currency: auth.session.user.currency,
-            updatedAt: now,
-          },
-        });
-    }
     client.powerSync.registerListener({
       statusChanged: (status) => {
         const flow = status.dataFlowStatus;

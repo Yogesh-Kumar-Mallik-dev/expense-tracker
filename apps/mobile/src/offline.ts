@@ -3,7 +3,6 @@ import {
   createHttpCredentialsProvider,
   createOfflineServices,
   restoreBackupSnapshot,
-  users,
   type OfflineServices,
 } from "@expense-tracker/db-offline";
 import { createMobileDatabase } from "@expense-tracker/db-offline/driver/mobile";
@@ -45,28 +44,6 @@ export class MobileOfflineRuntime
     const client = createMobileDatabase({ filename });
     this.client = client;
     this.value = createOfflineServices(client.db);
-    const auth = this.session().state();
-    if (auth.status === "authenticated") {
-      const now = new Date().toISOString();
-      await client.db
-        .insert(users)
-        .values({
-          ...auth.session.user,
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
-        })
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            email: auth.session.user.email,
-            name: auth.session.user.name,
-            currency: auth.session.user.currency,
-            timezone: auth.session.user.timezone,
-            updatedAt: now,
-          },
-        });
-    }
     client.powerSync.registerListener({
       statusChanged: (status) =>
         this.set({

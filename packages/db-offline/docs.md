@@ -90,6 +90,15 @@ let the user rename or merge it; services must not use check-then-insert.
 Credential providers must return a PowerSync endpoint and short-lived token.
 Returning `null` indicates that no user is signed in.
 
+## Profile bootstrap
+
+`User` is server-created. Platform runtimes must not seed an authenticated
+session into the synchronized `User` table because that produces a PowerSync
+`PUT User` operation which the authoritative API rejects. Until the
+`my_profile` stream downloads the row, platform code uses the authenticated
+session as its bootstrap identity. Harmless profile changes remain explicit
+`PATCH` operations; email changes and account deletion use server commands.
+
 Attachment rows synchronize metadata only. Binary files use the API's
 presigned object-storage lifecycle. An offline client retains its preassigned
 attachment UUID, requests an upload URL with that UUID when online, uploads the

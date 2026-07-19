@@ -109,6 +109,17 @@ test("PowerSync rejects privileged profile and attachment mutations", () => {
   const attachmentId = "00000000-0000-4000-8000-000000000002";
   const rejectedOperations = [
     {
+      op: "PUT",
+      table: "User",
+      id: userId,
+      data: {
+        email: "profile@example.com",
+        name: "Profile",
+        currency: "INR",
+        timezone: "Asia/Kolkata",
+      },
+    },
+    {
       op: "PATCH",
       table: "User",
       id: userId,
@@ -164,4 +175,25 @@ test("PowerSync rejects privileged profile and attachment mutations", () => {
     }).success,
     true,
   );
+});
+
+test("fresh platform databases do not bootstrap a synchronized User write", async () => {
+  const platformBootstraps = await Promise.all([
+    readFile("../apps/web/src/bootstrap/offline.ts", "utf8"),
+    readFile("../apps/desktop/src/offline.ts", "utf8"),
+    readFile("../apps/mobile/src/offline.ts", "utf8"),
+  ]);
+
+  for (const bootstrap of platformBootstraps) {
+    assert.doesNotMatch(
+      bootstrap,
+      /\.insert\(\s*users\s*\)/,
+      "session bootstrap must not enqueue a User PUT",
+    );
+    assert.doesNotMatch(
+      bootstrap,
+      /(?:import|,\s*)\s*users(?:\s*,|\s*})/,
+      "platform bootstrap must not import the synchronized User table",
+    );
+  }
 });

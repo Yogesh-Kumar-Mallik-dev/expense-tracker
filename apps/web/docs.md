@@ -20,6 +20,11 @@ Existing local records render without waiting for first synchronization.
 Attachment bytes are retained in IndexedDB while retry metadata lives in the
 local-only SQLite queue.
 
+On a fresh database, the authenticated session is the bootstrap identity. The
+runtime does not insert it into the synchronized `User` table; the authoritative
+profile arrives through the `my_profile` stream. This prevents first login from
+enqueuing a rejected `PUT User` operation.
+
 `next.config.ts` transpiles the three local workspace libraries. The app-local
 `@/*` alias resolves from `apps/web`; cross-package code must use the published
 `@expense-tracker/*` names.

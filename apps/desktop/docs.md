@@ -16,3 +16,7 @@ The TypeScript bootstrap passes the database handle and memory-only access
 token to `connect_powersync`. Rust fetches PowerSync credentials, uploads
 complete CRUD transactions, and receives rotated access tokens without
 persisting them.
+
+The session profile is not copied into the synchronized `User` table during
+database initialization. The authoritative row is downloaded by PowerSync, so
+opening a new per-user database cannot enqueue a rejected `PUT User` operation.

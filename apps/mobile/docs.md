@@ -10,6 +10,10 @@ access credentials remain in memory. The email index selects only the previous
 user ID; the device key itself is `expense-tracker.device-id.<userId>` and is
 verified against the authenticated device list.
 
+Fresh databases use the authenticated session as bootstrap identity and do not
+insert a synchronized `User` row. PowerSync downloads the authoritative profile,
+avoiding a permanently retrying `PUT User` upload on first login.
+
 The native SQLite dependency requires an Expo development or native build;
 Expo Go is not supported. Secure tokens belong in platform credential storage,
 not synchronized SQLite tables.
