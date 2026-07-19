@@ -4,6 +4,31 @@ This document defines project-wide release, retention, backup, and telemetry
 requirements. App-specific commands and integration details remain in each
 application's `README.md`, `docs.md`, and `usage-guide.md`.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on pull requests and pushes to `main`. It
+provides these required checks:
+
+- `TypeScript quality`: type checking and linting;
+- `Tests`: the complete central test workspace;
+- `Production builds`: API, web, desktop renderer, mobile web export, and
+  shared packages;
+- `Database migrations`: Prisma validation, all PostgreSQL migrations against
+  an empty PostgreSQL 17 database, and Drizzle journal consistency;
+- `Expo Doctor`: Expo and React Native dependency/configuration checks;
+- `Rust and Tauri`: formatting, Clippy with warnings denied, locked Cargo
+  checking, and a debug Tauri build without packaging.
+
+Repository administrators must protect `main`, require a pull request, require
+all six checks above, require the branch to be current before merging, dismiss
+stale approvals, and prohibit bypass except for an audited emergency. GitHub
+branch protection is repository-host state and cannot be guaranteed by a
+checked-in workflow alone.
+
+CI uses only repository-safe development defaults. Production credentials,
+signing keys, telemetry tokens, and deployment secrets must not be added to
+build-validation jobs.
+
 ## Mobile releases
 
 Mobile builds use EAS development, preview, and production profiles. Production

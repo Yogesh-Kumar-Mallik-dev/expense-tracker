@@ -375,6 +375,18 @@ pnpm check-types
 pnpm lint
 ```
 
+## Tests and CI
+
+```bash
+pnpm test
+pnpm --filter @expense-tracker/mobile doctor
+```
+
+Pull requests and pushes to `main` run TypeScript, lint, tests, production
+builds, PostgreSQL/Drizzle migration validation, Expo Doctor, and native
+Rust/Tauri checks. Required branch-protection settings and release gates are
+documented in [OPERATIONS.md](./OPERATIONS.md).
+
 ## Format
 
 ```bash
