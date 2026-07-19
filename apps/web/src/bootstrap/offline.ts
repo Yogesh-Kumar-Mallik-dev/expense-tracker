@@ -124,29 +124,33 @@ export class WebOfflineRuntime
             ? (error.conflict as Record<string, unknown>)
             : {};
         const now = new Date().toISOString();
-        await client.db.insert(syncConflicts).values(
-          operations.map((operation) => ({
-            id: crypto.randomUUID(),
-            crudTransactionId,
-            entity: operation.table,
-            recordId: operation.id,
-            operation: operation.op,
-            kind: typeof conflict.kind === "string" ? conflict.kind : "UNKNOWN",
-            fields: JSON.stringify(
-              Array.isArray(conflict.fields) ? conflict.fields : [],
-            ),
-            message:
-              error instanceof Error
-                ? error.message
-                : "Synchronization conflict",
-            recovery:
-              typeof conflict.recovery === "string"
-                ? conflict.recovery
-                : "REVIEW",
-            createdAt: now,
-            resolvedAt: null,
-          })),
-        );
+        await client.db
+          .insert(syncConflicts)
+          .values(
+            operations.map((operation) => ({
+              id: crypto.randomUUID(),
+              crudTransactionId,
+              entity: operation.table,
+              recordId: operation.id,
+              operation: operation.op,
+              kind:
+                typeof conflict.kind === "string" ? conflict.kind : "UNKNOWN",
+              fields: JSON.stringify(
+                Array.isArray(conflict.fields) ? conflict.fields : [],
+              ),
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Synchronization conflict",
+              recovery:
+                typeof conflict.recovery === "string"
+                  ? conflict.recovery
+                  : "REVIEW",
+              createdAt: now,
+              resolvedAt: null,
+            })),
+          )
+          .onConflictDoNothing();
         this.set({
           ...this.current,
           status: "failed",

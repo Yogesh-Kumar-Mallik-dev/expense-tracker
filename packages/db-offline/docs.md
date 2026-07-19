@@ -87,6 +87,12 @@ devices. The upload endpoint must distinguish permanent uniqueness conflicts
 from retryable failures. The UI recovery flow must show the rejected record and
 let the user rename or merge it; services must not use check-then-insert.
 
+Permanent conflicts are persisted idempotently using the CRUD transaction,
+entity, record, and operation identity. Web and mobile use
+`onConflictDoNothing`; desktop uses `INSERT OR IGNORE`. After persistence, the
+PowerSync transaction is completed so a permanent failure cannot retry forever.
+Retryable transport and server failures remain queued.
+
 Credential providers must return a PowerSync endpoint and short-lived token.
 Returning `null` indicates that no user is signed in.
 
@@ -125,3 +131,7 @@ PowerSync.
 Envelope budgeting adds `EnvelopeAllocation` and `BudgetTransfer`. They mirror
 PostgreSQL source rows and synchronize independently. Available envelope
 balances are recalculated locally rather than synchronized as mutable totals.
+
+Transaction tombstones are server-controlled. Restore calls the authoritative
+`POST /api/transactions/:id/restore` endpoint and waits for PowerSync to
+download the restored row; clients do not upload `deletedAt: null`.

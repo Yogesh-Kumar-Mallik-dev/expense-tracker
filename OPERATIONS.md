@@ -29,6 +29,14 @@ CI uses only repository-safe development defaults. Production credentials,
 signing keys, telemetry tokens, and deployment secrets must not be added to
 build-validation jobs.
 
+The central integration suite exercises retryable and permanent PowerSync
+uploads, idempotent PUT replay, atomic batch rollback, cross-user rejection,
+first-login empty queues, two-device convergence, tombstones, authoritative
+restore, and conflict deduplication. A release environment must additionally
+run the same restart/reconnect journey against its deployed PowerSync service;
+the repository test transport intentionally does not require vendor cloud
+credentials.
+
 ## Mobile releases
 
 Mobile builds use EAS development, preview, and production profiles. Production

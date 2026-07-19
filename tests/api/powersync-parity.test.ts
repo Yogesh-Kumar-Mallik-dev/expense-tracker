@@ -206,3 +206,18 @@ test("PowerSync downloads the financial timezone with the user profile", async (
   );
   assert.match(profileStream, /\btimezone\b/);
 });
+
+test("every offline platform terminates and deduplicates permanent conflicts", async () => {
+  const [web, mobile, desktop, schema] = await Promise.all([
+    readFile("../apps/web/src/bootstrap/offline.ts", "utf8"),
+    readFile("../apps/mobile/src/offline.ts", "utf8"),
+    readFile("../apps/desktop/src-tauri/src/lib.rs", "utf8"),
+    readFile("../packages/db-offline/src/schema/sync.ts", "utf8"),
+  ]);
+  assert.match(web, /onPermanentConflict/);
+  assert.match(web, /onConflictDoNothing/);
+  assert.match(mobile, /onPermanentConflict/);
+  assert.match(mobile, /onConflictDoNothing/);
+  assert.match(desktop, /INSERT OR IGNORE INTO "SyncConflict"/);
+  assert.match(schema, /SyncConflict_operation_unique/);
+});

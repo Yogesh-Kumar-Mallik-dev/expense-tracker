@@ -20,3 +20,6 @@ persisting them.
 The session profile is not copied into the synchronized `User` table during
 database initialization. The authoritative row is downloaded by PowerSync, so
 opening a new per-user database cannot enqueue a rejected `PUT User` operation.
+
+The Rust connector stores permanent conflicts with `INSERT OR IGNORE` before
+completing the blocked CRUD transaction. Retryable responses remain queued.

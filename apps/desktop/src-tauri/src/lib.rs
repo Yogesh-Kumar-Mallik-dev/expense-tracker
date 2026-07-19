@@ -83,7 +83,7 @@ impl ApiConnector {
         )?;
         let writer = self.database.writer().await?;
         writer.execute(
-            r#"INSERT INTO "SyncConflict"
+            r#"INSERT OR IGNORE INTO "SyncConflict"
                ("id", "crudTransactionId", "entity", "recordId", "operation",
                 "kind", "fields", "message", "recovery", "createdAt", "resolvedAt")
                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)"#,

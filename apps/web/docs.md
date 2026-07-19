@@ -25,6 +25,10 @@ runtime does not insert it into the synchronized `User` table; the authoritative
 profile arrives through the `my_profile` stream. This prevents first login from
 enqueuing a rejected `PUT User` operation.
 
+Permanent conflicts are inserted idempotently into the local conflict store
+before the corresponding CRUD transaction is completed. Retryable failures
+remain queued.
+
 `next.config.ts` transpiles the three local workspace libraries. The app-local
 `@/*` alias resolves from `apps/web`; cross-package code must use the published
 `@expense-tracker/*` names.

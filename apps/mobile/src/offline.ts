@@ -3,6 +3,7 @@ import {
   createHttpCredentialsProvider,
   createOfflineServices,
   restoreBackupSnapshot,
+  syncConflicts,
   type OfflineServices,
 } from "@expense-tracker/db-offline";
 import { createMobileDatabase } from "@expense-tracker/db-offline/driver/mobile";
@@ -92,6 +93,46 @@ export class MobileOfflineRuntime
             },
           );
         }
+      },
+      onPermanentConflict: async ({ crudTransactionId, error, operations }) => {
+        const conflict =
+          error && typeof error === "object" && "conflict" in error
+            ? (error.conflict as Record<string, unknown>)
+            : {};
+        const now = new Date().toISOString();
+        await client.db
+          .insert(syncConflicts)
+          .values(
+            operations.map((operation) => ({
+              id: crypto.randomUUID(),
+              crudTransactionId,
+              entity: operation.table,
+              recordId: operation.id,
+              operation: operation.op,
+              kind:
+                typeof conflict.kind === "string" ? conflict.kind : "UNKNOWN",
+              fields: JSON.stringify(
+                Array.isArray(conflict.fields) ? conflict.fields : [],
+              ),
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Synchronization conflict",
+              recovery:
+                typeof conflict.recovery === "string"
+                  ? conflict.recovery
+                  : "REVIEW",
+              createdAt: now,
+              resolvedAt: null,
+            })),
+          )
+          .onConflictDoNothing();
+        this.set({
+          ...this.current,
+          status: "failed",
+          error:
+            "A permanent synchronization conflict requires review in the local conflict store.",
+        });
       },
     });
     try {

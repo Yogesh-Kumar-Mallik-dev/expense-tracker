@@ -606,7 +606,15 @@ export async function applyUpload(
   input: z.infer<typeof uploadSchema>,
   userId: string,
 ) {
-  await prisma.$transaction(async (db) => {
+  await applyUploadWithClient(prisma, input, userId);
+}
+
+export async function applyUploadWithClient(
+  client: Pick<PrismaClient, "$transaction">,
+  input: z.infer<typeof uploadSchema>,
+  userId: string,
+) {
+  await client.$transaction(async (db) => {
     for (const [operationIndex, operation] of input.operations.entries()) {
       try {
         await applyOperation(db, operation, userId);

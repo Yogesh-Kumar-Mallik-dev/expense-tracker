@@ -1,4 +1,4 @@
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { devices } from "./device";
 import { users } from "./user";
 
@@ -43,6 +43,12 @@ export const syncConflicts = sqliteTable(
   (table) => [
     index("SyncConflict_recordId_idx").on(table.entity, table.recordId),
     index("SyncConflict_resolvedAt_idx").on(table.resolvedAt),
+    uniqueIndex("SyncConflict_operation_unique").on(
+      table.crudTransactionId,
+      table.entity,
+      table.recordId,
+      table.operation,
+    ),
   ],
 );
 

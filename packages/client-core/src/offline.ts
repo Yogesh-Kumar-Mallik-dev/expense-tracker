@@ -135,7 +135,7 @@ export class OfflineExpenseClient implements ExpenseDataClient {
     await this.local.transactions.delete(id, this.user);
   }
   async restoreTransaction(id: string) {
-    return { data: await this.local.transactions.restore(id, this.user) };
+    return this.remote.restoreTransaction(id);
   }
   async transactionTags(id: string) {
     return { data: await this.local.transactionTags.list(id, this.user) };

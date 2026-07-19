@@ -14,6 +14,10 @@ Fresh databases use the authenticated session as bootstrap identity and do not
 insert a synchronized `User` row. PowerSync downloads the authoritative profile,
 avoiding a permanently retrying `PUT User` upload on first login.
 
+Permanent upload conflicts are stored in the local `SyncConflict` table before
+the CRUD transaction is completed. The composite operation identity prevents
+duplicate rows if the application stops between those two actions.
+
 The native SQLite dependency requires an Expo development or native build;
 Expo Go is not supported. Secure tokens belong in platform credential storage,
 not synchronized SQLite tables.
