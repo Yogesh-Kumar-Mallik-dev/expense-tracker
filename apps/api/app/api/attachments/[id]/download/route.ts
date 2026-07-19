@@ -2,6 +2,7 @@ import { requireUser } from "../../../../../src/auth";
 import { HttpError, ok, route } from "../../../../../src/http";
 import { services } from "../../../../../src/services";
 import { createDownloadUrl } from "../../../../../src/storage";
+import { assertAttachmentStorageKey } from "../../../../../src/domain-authorization";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -15,6 +16,11 @@ export const GET = route(async (request: Request, context: Context) => {
   if (!attachment) {
     throw new HttpError(404, "NOT_FOUND", "Attachment not found");
   }
+  assertAttachmentStorageKey(
+    userId,
+    attachment.transactionId,
+    attachment.storageKey,
+  );
   return ok({
     downloadUrl: await createDownloadUrl(
       attachment.storageKey,

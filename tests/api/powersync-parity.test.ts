@@ -90,3 +90,65 @@ test("PowerSync upload contracts reject server fields and accept envelope activi
     true,
   );
 });
+
+test("PowerSync rejects privileged profile and attachment mutations", () => {
+  const userId = "00000000-0000-4000-8000-000000000001";
+  const attachmentId = "00000000-0000-4000-8000-000000000002";
+  const rejectedOperations = [
+    {
+      op: "PATCH",
+      table: "User",
+      id: userId,
+      data: { email: "unverified@example.com" },
+    },
+    {
+      op: "PATCH",
+      table: "User",
+      id: userId,
+      data: { deletedAt: "2026-07-19T00:00:00.000Z" },
+    },
+    { op: "DELETE", table: "User", id: userId },
+    {
+      op: "PATCH",
+      table: "Attachment",
+      id: attachmentId,
+      data: {
+        storageKey:
+          "users/another-user/transactions/another-transaction/file.pdf",
+      },
+    },
+    {
+      op: "PUT",
+      table: "Attachment",
+      id: attachmentId,
+      data: {},
+    },
+  ] as const;
+
+  for (const operation of rejectedOperations) {
+    assert.equal(
+      uploadSchema.safeParse({ operations: [operation] }).success,
+      false,
+      `${operation.op} ${operation.table} should be rejected`,
+    );
+  }
+
+  assert.equal(
+    uploadSchema.safeParse({
+      operations: [
+        {
+          op: "PATCH",
+          table: "User",
+          id: userId,
+          data: {
+            name: "Updated name",
+            currency: "INR",
+            timezone: "Asia/Kolkata",
+            updatedAt: "2026-07-19T00:00:00.000Z",
+          },
+        },
+      ],
+    }).success,
+    true,
+  );
+});

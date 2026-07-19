@@ -94,6 +94,8 @@ Attachment rows synchronize metadata only. Binary files use the API's
 presigned object-storage lifecycle. An offline client retains its preassigned
 attachment UUID, requests an upload URL with that UUID when online, uploads the
 bytes, and completes verification without recreating the transaction.
+Attachment rows are download-only through PowerSync; creation and deletion use
+the authoritative attachment API so `storageKey` cannot be replaced locally.
 
 ## Service-layer boundary
 

@@ -5,7 +5,6 @@ import {
   requireOwnedCategory,
   requireOwnedDevice,
   requireOwnedTag,
-  validateAttachmentRelationship,
   validateTransactionRelationships,
 } from "./domain-authorization";
 
@@ -36,6 +35,18 @@ export const uploadSchema = z
   })
   .superRefine((input, context) => {
     input.operations.forEach((operation, operationIndex) => {
+      if (
+        (operation.table === "User" && operation.op !== "PATCH") ||
+        operation.table === "Attachment"
+      )
+        context.addIssue({
+          code: "custom",
+          message:
+            operation.table === "User"
+              ? "User creation and deletion require authoritative account commands"
+              : "Attachments require the authoritative upload and deletion lifecycle",
+          path: ["operations", operationIndex, "op"],
+        });
       for (const key of Object.keys(operation.data ?? {})) {
         if (!allowedFields[operation.table].has(key))
           context.addIssue({
@@ -87,7 +98,7 @@ const delegateNames = {
 const immutable = new Set(["id", "userId", "createdAt"]);
 const serverOnly = new Set(["passwordHash"]);
 const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
-  User: new Set(["email", "name", "currency", "updatedAt", "deletedAt"]),
+  User: new Set(["name", "currency", "timezone", "updatedAt"]),
   Account: new Set([
     "userId",
     "name",
@@ -171,16 +182,7 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "deletedAt",
   ]),
   TransactionTag: new Set(["transactionId", "tagId", "createdAt", "deletedAt"]),
-  Attachment: new Set([
-    "userId",
-    "transactionId",
-    "fileName",
-    "storageKey",
-    "mimeType",
-    "sizeBytes",
-    "createdAt",
-    "deletedAt",
-  ]),
+  Attachment: new Set(),
   Device: new Set([
     "userId",
     "name",
@@ -247,15 +249,7 @@ const requiredPutFields: Record<Operation["table"], readonly string[]> = {
   ],
   Tag: ["userId", "name", "createdAt", "updatedAt"],
   TransactionTag: ["transactionId", "tagId", "createdAt"],
-  Attachment: [
-    "userId",
-    "transactionId",
-    "fileName",
-    "storageKey",
-    "mimeType",
-    "sizeBytes",
-    "createdAt",
-  ],
+  Attachment: [],
   Device: ["userId", "name", "platform", "lastSeenAt", "createdAt"],
   SyncState: ["userId", "deviceId", "createdAt", "updatedAt"],
 };
@@ -456,14 +450,21 @@ async function assertOwned(
         "SYNC_OWNERSHIP_VIOLATION",
         "User profile does not match token",
       );
-    if (operation.op === "PUT") {
+    if (operation.op !== "PATCH") {
       throw new HttpError(
         400,
         "INVALID_SYNC_OPERATION",
-        "Users must be created through registration",
+        "User creation and deletion require authoritative account commands",
       );
     }
     return;
+  }
+  if (operation.table === "Attachment") {
+    throw new HttpError(
+      400,
+      "INVALID_SYNC_OPERATION",
+      "Attachments require the authoritative upload and deletion lifecycle",
+    );
   }
   const dataUserId = operation.data?.userId;
   if (operation.op === "PUT" && dataUserId !== userId) {
@@ -519,17 +520,6 @@ async function assertOwned(
     typeof operation.data?.parentId === "string"
   )
     await requireOwnedCategory(userId, operation.data.parentId, db);
-  if (
-    operation.table === "Attachment" &&
-    typeof operation.data?.transactionId === "string" &&
-    typeof operation.data.storageKey === "string"
-  )
-    await validateAttachmentRelationship(
-      userId,
-      operation.data.transactionId,
-      operation.data.storageKey,
-      db,
-    );
   if (
     operation.table === "SyncState" &&
     typeof operation.data?.deviceId === "string"

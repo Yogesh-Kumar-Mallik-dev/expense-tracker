@@ -210,7 +210,10 @@ The upload boundary:
 - allowlists synchronized table names and `PUT`, `PATCH`, and `DELETE`;
 - preserves client-generated row UUIDs;
 - rejects cross-user ownership;
-- prevents offline creation of authentication users;
+- permits only `name`, `currency`, `timezone`, and `updatedAt` profile patches;
+- rejects synchronized user creation, email changes, and account deletion;
+- keeps attachments download-only in PowerSync so object keys and lifecycle
+  transitions remain server-controlled;
 - strips server-only `passwordHash`;
 - converts documented date fields to Prisma dates;
 - turns `DELETE` into `deletedAt`;
@@ -273,8 +276,10 @@ payloads through Next.js:
    short-lived signed `GET` URL.
 
 Storage keys are generated beneath user, transaction, and attachment UUID
-prefixes. Completion rejects keys that do not exactly match this structure. The
-default size limit is 10 MiB.
+prefixes. Completion rejects keys that do not exactly match this structure, and
+download revalidates the stored prefix before signing a URL. `storageKey` is
+never client-writable through PowerSync and remains immutable after completion.
+The default size limit is 10 MiB.
 
 Synchronized metadata tombstones do not immediately remove binary objects.
 Production operations should run delayed garbage collection only after the

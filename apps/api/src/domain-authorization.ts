@@ -103,6 +103,14 @@ export async function validateAttachmentRelationship(
     forbidden("Attachment transaction is not owned by this user", [
       "transactionId",
     ]);
+  assertAttachmentStorageKey(userId, transactionId, storageKey);
+}
+
+export function assertAttachmentStorageKey(
+  userId: string,
+  transactionId: string,
+  storageKey: string,
+) {
   if (!storageKey.startsWith(`users/${userId}/transactions/${transactionId}/`))
     invalid("Attachment storage key is outside the user transaction prefix", [
       "storageKey",
