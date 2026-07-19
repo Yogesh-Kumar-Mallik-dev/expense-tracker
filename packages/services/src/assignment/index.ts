@@ -19,6 +19,14 @@ export interface TransactionTagRecord extends AssignmentRecord {
   transactionId: string;
   tagId: string;
 }
+export const budgetCategorySchema = z.object({
+  budgetId: z.uuid(),
+  categoryId: z.uuid(),
+});
+export const transactionTagSchema = z.object({
+  transactionId: z.uuid(),
+  tagId: z.uuid(),
+});
 abstract class AssignmentService<T extends AssignmentRecord> {
   constructor(
     protected readonly repository: AssignmentRepositoryPort<T>,
@@ -46,8 +54,7 @@ export class BudgetCategoryService extends AssignmentService<BudgetCategoryRecor
   async create(budgetId: string, categoryId: string) {
     const record: BudgetCategoryRecord = {
       id: parseUuid(this.idFactory()),
-      budgetId: z.uuid().parse(budgetId),
-      categoryId: z.uuid().parse(categoryId),
+      ...budgetCategorySchema.parse({ budgetId, categoryId }),
       createdAt: this.clock(),
       deletedAt: null,
     };
@@ -60,8 +67,7 @@ export class TransactionTagService extends AssignmentService<TransactionTagRecor
   async create(transactionId: string, tagId: string) {
     const record: TransactionTagRecord = {
       id: parseUuid(this.idFactory()),
-      transactionId: z.uuid().parse(transactionId),
-      tagId: z.uuid().parse(tagId),
+      ...transactionTagSchema.parse({ transactionId, tagId }),
       createdAt: this.clock(),
       deletedAt: null,
     };

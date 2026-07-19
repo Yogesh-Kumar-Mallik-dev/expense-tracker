@@ -130,6 +130,34 @@ export async function requireOwnedCategory(
     forbidden("Category is not owned by this user", ["categoryId"]);
 }
 
+export async function validateCategoryParentRelationship(
+  userId: string,
+  categoryId: string,
+  parentId: string | null,
+  type: "EXPENSE" | "INCOME",
+  db: Db = prisma,
+) {
+  let cursor = parentId;
+  for (let depth = 0; cursor; depth += 1) {
+    if (depth >= 100)
+      invalid("Category hierarchy exceeds the supported depth", ["parentId"]);
+    if (cursor === categoryId)
+      invalid("Category hierarchy cannot contain a cycle", ["parentId"]);
+    const parent = await db.category.findFirst({
+      where: { id: cursor, userId, deletedAt: null },
+      select: { id: true, parentId: true, type: true },
+    });
+    if (!parent)
+      forbidden("Parent category is not owned by this user", ["parentId"]);
+    if (parent.type !== type)
+      invalid("Parent and child categories must use the same type", [
+        "parentId",
+        "type",
+      ]);
+    cursor = parent.parentId;
+  }
+}
+
 export async function requireOwnedTag(
   userId: string,
   tagId: string,

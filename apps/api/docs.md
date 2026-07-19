@@ -214,8 +214,15 @@ The upload boundary:
 - rejects synchronized user creation, email changes, and account deletion;
 - keeps attachments download-only in PowerSync so object keys and lifecycle
   transitions remain server-controlled;
-- strips server-only `passwordHash`;
-- converts documented date fields to Prisma dates;
+- rejects direct tombstone timestamps; only `DELETE` may create a tombstone;
+- merges every `PATCH` with the authoritative row and validates the complete
+  result through the shared service schemas;
+- validates UUIDs, enums, exact money, lengths, colours, financial dates,
+  transfer rules, envelope activity, and device/sync metadata before Prisma;
+- validates category parent ownership, matching type, and cycle freedom;
+- persists only fields from the requested writable projection after shared
+  schema transformations such as trimming and currency normalization;
+- converts validated date fields to Prisma dates;
 - turns `DELETE` into `deletedAt`;
 - commits the complete operation list inside one `prisma.$transaction`.
 
@@ -229,34 +236,34 @@ being retried forever.
 The backend uses the Node.js runtime because Prisma, PostgreSQL, `scrypt`, and
 Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
 
-| Variable                       | Purpose                                             |
-| ------------------------------ | --------------------------------------------------- |
-| `DATABASE_URL`                 | PostgreSQL connection used by Prisma                |
-| `WEB_APP_URL`                  | Public web origin used in email verification links  |
+| Variable                       | Purpose                                                   |
+| ------------------------------ | --------------------------------------------------------- |
+| `DATABASE_URL`                 | PostgreSQL connection used by Prisma                      |
+| `WEB_APP_URL`                  | Public web origin used in email verification links        |
 | `RESEND_API_KEY`               | Resend API key; required for email delivery in production |
-| `EMAIL_FROM`                   | Verified sender used for email-change messages      |
-| `ACCESS_TOKEN_SECRET`          | Access-token signing secret, at least 32 characters |
-| `REFRESH_TOKEN_SECRET`         | Refresh-token signing secret                        |
-| `POWERSYNC_URL`                | PowerSync service endpoint                          |
-| `POWERSYNC_PRIVATE_KEY_BASE64` | Base64-encoded RSA private-key PEM                  |
-| `POWERSYNC_KEY_ID`             | JWT/JWKS key identifier                             |
-| `POWERSYNC_AUDIENCE`           | Audience configured in PowerSync                    |
-| `POWERSYNC_ISSUER`             | Token issuer identifying this API                   |
-| `ATTACHMENT_BUCKET`            | Private S3-compatible object bucket                 |
-| `ATTACHMENT_REGION`            | Object-storage region                               |
-| `ATTACHMENT_ENDPOINT`          | Optional S3-compatible endpoint                     |
-| `ATTACHMENT_FORCE_PATH_STYLE`  | Enable path-style compatible-store requests         |
-| `ATTACHMENT_ACCESS_KEY_ID`     | Optional static storage access key                  |
-| `ATTACHMENT_SECRET_ACCESS_KEY` | Optional static storage secret                      |
-| `ATTACHMENT_MAX_BYTES`         | Maximum accepted object size                        |
-| `LOG_LEVEL`                    | Minimum boxed and JSON log severity                 |
-| `LOG_DIRECTORY`                | Rotating JSONL output directory                     |
-| `LOG_STACKS`                   | Show stack boxes in the production terminal         |
-| `TRUST_PROXY`                  | Trust deployment-overwritten forwarding headers     |
-| `CORS_ORIGINS`                 | Comma-separated browser origins allowed by the API   |
-| `RETENTION_JOB_SECRET`         | Authenticates the internal retention job             |
-| `TELEMETRY_INGEST_URL`         | Server-side telemetry destination                    |
-| `TELEMETRY_INGEST_TOKEN`       | Optional server-side telemetry bearer token          |
+| `EMAIL_FROM`                   | Verified sender used for email-change messages            |
+| `ACCESS_TOKEN_SECRET`          | Access-token signing secret, at least 32 characters       |
+| `REFRESH_TOKEN_SECRET`         | Refresh-token signing secret                              |
+| `POWERSYNC_URL`                | PowerSync service endpoint                                |
+| `POWERSYNC_PRIVATE_KEY_BASE64` | Base64-encoded RSA private-key PEM                        |
+| `POWERSYNC_KEY_ID`             | JWT/JWKS key identifier                                   |
+| `POWERSYNC_AUDIENCE`           | Audience configured in PowerSync                          |
+| `POWERSYNC_ISSUER`             | Token issuer identifying this API                         |
+| `ATTACHMENT_BUCKET`            | Private S3-compatible object bucket                       |
+| `ATTACHMENT_REGION`            | Object-storage region                                     |
+| `ATTACHMENT_ENDPOINT`          | Optional S3-compatible endpoint                           |
+| `ATTACHMENT_FORCE_PATH_STYLE`  | Enable path-style compatible-store requests               |
+| `ATTACHMENT_ACCESS_KEY_ID`     | Optional static storage access key                        |
+| `ATTACHMENT_SECRET_ACCESS_KEY` | Optional static storage secret                            |
+| `ATTACHMENT_MAX_BYTES`         | Maximum accepted object size                              |
+| `LOG_LEVEL`                    | Minimum boxed and JSON log severity                       |
+| `LOG_DIRECTORY`                | Rotating JSONL output directory                           |
+| `LOG_STACKS`                   | Show stack boxes in the production terminal               |
+| `TRUST_PROXY`                  | Trust deployment-overwritten forwarding headers           |
+| `CORS_ORIGINS`                 | Comma-separated browser origins allowed by the API        |
+| `RETENTION_JOB_SECRET`         | Authenticates the internal retention job                  |
+| `TELEMETRY_INGEST_URL`         | Server-side telemetry destination                         |
+| `TELEMETRY_INGEST_TOKEN`       | Optional server-side telemetry bearer token               |
 
 The authoritative variable inventories are under
 [`secrets/`](../../secrets/README.md). Secrets must not use example values and

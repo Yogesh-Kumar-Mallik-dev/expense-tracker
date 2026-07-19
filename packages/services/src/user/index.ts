@@ -24,7 +24,7 @@ export interface UserRepositoryPort extends CrudRepositoryPort<
 > {
   findByEmail(email: string): Promise<UserRecord | null>;
 }
-const schema = z.object({
+export const createUserSchema = z.object({
   email: z.email().transform((v) => v.toLowerCase()),
   name: z.string().trim().min(1).max(120).nullable().optional(),
   currency: z
@@ -46,7 +46,28 @@ const schema = z.object({
     }, "Invalid IANA timezone")
     .default("UTC"),
 });
-const update = schema.partial().refine((v) => Object.keys(v).length > 0);
+export const updateUserSchema = createUserSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+export const syncUserProfileSchema = z.object({
+  name: z.string().trim().min(1).max(120).nullable(),
+  currency: z
+    .string()
+    .length(3)
+    .transform((value) => value.toUpperCase()),
+  timezone: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine((value) => {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Invalid IANA timezone"),
+});
 export class UserService extends SingleRowService<
   UserRecord,
   CreateUserInput,
@@ -57,7 +78,7 @@ export class UserService extends SingleRowService<
   }
   // Concurrency note: N/A - pure profile construction; authentication credentials are handled outside this service.
   protected build(input: CreateUserInput, id: string, now: string): UserRecord {
-    const v = schema.parse(input);
+    const v = createUserSchema.parse(input);
     return {
       id,
       email: v.email,
@@ -71,7 +92,7 @@ export class UserService extends SingleRowService<
   }
   // Concurrency note: N/A - direct profile replacement validation with no stored-state computation.
   protected parseUpdate(input: UpdateUserInput) {
-    return update.parse(input) as UpdateUserInput;
+    return updateUserSchema.parse(input) as UpdateUserInput;
   }
   // Concurrency note: Safe read-only lookup; email uniqueness is enforced by the database, never check-then-insert here.
   findByEmail(email: string) {

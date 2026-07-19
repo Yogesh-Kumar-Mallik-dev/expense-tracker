@@ -39,7 +39,7 @@ export interface CategoryRepositoryPort extends CrudRepositoryPort<
     includeArchived?: boolean,
   ): Promise<CategoryRecord[]>;
 }
-const createSchema = z.object({
+export const createCategorySchema = z.object({
   userId: z.uuid(),
   parentId: z.uuid().nullable().optional(),
   name: z.string().trim().min(1).max(120),
@@ -51,7 +51,7 @@ const createSchema = z.object({
     .optional(),
   icon: z.string().trim().min(1).max(100).nullable().optional(),
 });
-const updateSchema = createSchema
+export const updateCategorySchema = createCategorySchema
   .omit({ userId: true })
   .partial()
   .extend({ isArchived: z.boolean().optional() })
@@ -70,7 +70,7 @@ export class CategoryService extends SingleRowService<
     id: string,
     now: string,
   ): CategoryRecord {
-    const v = createSchema.parse(input);
+    const v = createCategorySchema.parse(input);
     return {
       id,
       userId: v.userId,
@@ -87,7 +87,7 @@ export class CategoryService extends SingleRowService<
   }
   // Concurrency note: N/A - pure validation; undefined fields are omitted by callers and never read from storage.
   protected parseUpdate(input: UpdateCategoryInput) {
-    return updateSchema.parse(input) as UpdateCategoryInput;
+    return updateCategorySchema.parse(input) as UpdateCategoryInput;
   }
   // Concurrency note: Safe read-only query; archive/type filters do not participate in conflict resolution.
   list(userId: string, type?: CategoryType, includeArchived = false) {

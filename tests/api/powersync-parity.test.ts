@@ -89,6 +89,19 @@ test("PowerSync upload contracts reject server fields and accept envelope activi
     }).success,
     true,
   );
+  assert.equal(
+    uploadSchema.safeParse({
+      operations: [
+        {
+          op: "PATCH",
+          table: "Account",
+          id,
+          data: { deletedAt: "2026-07-19T00:00:00.000Z" },
+        },
+      ],
+    }).success,
+    false,
+  );
 });
 
 test("PowerSync rejects privileged profile and attachment mutations", () => {

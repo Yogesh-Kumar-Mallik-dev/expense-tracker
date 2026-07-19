@@ -26,12 +26,12 @@ export interface DeviceRepositoryPort {
   update(id: string, userId: string, v: UpdateDeviceInput): Promise<unknown>;
   delete(id: string, userId: string): Promise<unknown>;
 }
-const schema = z.object({
+export const createDeviceSchema = z.object({
   userId: z.uuid(),
   name: z.string().trim().min(1).max(120),
   platform: z.enum(["WEB", "DESKTOP", "IOS", "ANDROID"]),
 });
-const update = z
+export const updateDeviceSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
     platform: z.enum(["WEB", "DESKTOP", "IOS", "ANDROID"]).optional(),
@@ -46,7 +46,7 @@ export class DeviceService {
   ) {}
   // Concurrency note: Safe single-row creation with a UUID; there is no shared device counter.
   async create(input: CreateDeviceInput) {
-    const v = schema.parse(input);
+    const v = createDeviceSchema.parse(input);
     const now = this.clock();
     const record: DeviceRecord = {
       id: parseUuid(this.idFactory()),
@@ -67,7 +67,7 @@ export class DeviceService {
     await this.repository.update(
       z.uuid().parse(id),
       z.uuid().parse(userId),
-      update.parse(input) as UpdateDeviceInput,
+      updateDeviceSchema.parse(input) as UpdateDeviceInput,
     );
   }
   // Concurrency note: Safe idempotent single-row tombstone.

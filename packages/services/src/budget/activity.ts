@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createUuid, type Clock, type IdFactory, systemClock } from "../shared";
-import { moneySchema } from "../transaction";
+import { positiveMoneySchema } from "../transaction";
 import type {
   BudgetRepositoryPort,
   EnvelopeAllocationRecord,
@@ -14,23 +14,19 @@ export interface BudgetActivityRepositoryPort {
   listTransfers(budgetId: string): Promise<EnvelopeTransferRecord[]>;
 }
 
-const allocationSchema = z.object({
+export const envelopeAllocationSchema = z.object({
   budgetId: z.uuid(),
   categoryId: z.uuid(),
-  amount: moneySchema.refine(
-    (value) => !value.startsWith("-") && value !== "0",
-  ),
+  amount: positiveMoneySchema,
   occurredAt: z.iso.date(),
   note: z.string().trim().max(500).nullable().default(null),
 });
-const transferSchema = z
+export const envelopeTransferSchema = z
   .object({
     budgetId: z.uuid(),
     fromCategoryId: z.uuid().nullable(),
     toCategoryId: z.uuid().nullable(),
-    amount: moneySchema.refine(
-      (value) => !value.startsWith("-") && value !== "0",
-    ),
+    amount: positiveMoneySchema,
     occurredAt: z.iso.date(),
     note: z.string().trim().max(500).nullable().default(null),
   })
@@ -65,7 +61,7 @@ export class BudgetActivityService {
     input: Omit<EnvelopeAllocationRecord, "id" | "createdAt" | "deletedAt">,
   ) {
     await this.requireEnvelope(input.budgetId, userId);
-    const value = allocationSchema.parse(input);
+    const value = envelopeAllocationSchema.parse(input);
     const record: EnvelopeAllocationRecord = {
       id: this.idFactory(),
       ...value,
@@ -81,7 +77,7 @@ export class BudgetActivityService {
     input: Omit<EnvelopeTransferRecord, "id" | "createdAt" | "deletedAt">,
   ) {
     await this.requireEnvelope(input.budgetId, userId);
-    const value = transferSchema.parse(input);
+    const value = envelopeTransferSchema.parse(input);
     const record: EnvelopeTransferRecord = {
       id: this.idFactory(),
       ...value,

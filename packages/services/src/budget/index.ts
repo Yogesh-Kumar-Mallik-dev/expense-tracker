@@ -59,7 +59,7 @@ export interface BudgetRepositoryPort extends CrudRepositoryPort<
     to: string,
   ): Promise<BudgetRecord[]>;
 }
-const schema = z
+export const createBudgetSchema = z
   .object({
     userId: z.uuid(),
     name: z.string().trim().min(1).max(120),
@@ -77,7 +77,7 @@ const schema = z
     message: "Budget end must not precede start",
     path: ["endsOn"],
   });
-const updateSchema = z
+export const updateBudgetSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
     amount: moneySchema.optional(),
@@ -110,12 +110,12 @@ export class BudgetService extends SingleRowService<
     id: string,
     now: string,
   ): BudgetRecord {
-    const v = schema.parse(input);
+    const v = createBudgetSchema.parse(input);
     return { id, ...v, createdAt: now, updatedAt: now, deletedAt: null };
   }
   // Concurrency note: N/A - pure replacement validation; aggregate budget usage is never persisted here.
   protected parseUpdate(input: UpdateBudgetInput) {
-    return updateSchema.parse(input) as UpdateBudgetInput;
+    return updateBudgetSchema.parse(input) as UpdateBudgetInput;
   }
   // Concurrency note: Safe read-only range query; date strings select records and do not resolve write conflicts.
   listForPeriod(userId: string, from: string, to: string) {

@@ -69,6 +69,12 @@ decimal money strings. Database adapters translate those records to Prisma or
 Drizzle types. Services do not perform remote existence checks for foreign keys;
 offline applications use locally known IDs and synchronize parents separately.
 
+Create, update, assignment, envelope-activity, profile, device, and sync-state
+schemas are exported as domain contracts. Authoritative transports such as the
+PowerSync upload boundary compose these schemas rather than maintaining weaker
+copies. A transport must still perform ownership and cross-record relationship
+checks because those require authoritative persistence.
+
 Reporting adapters intentionally run unpaginated source-row queries. Reusing a
 paginated UI transaction query would silently undercount balances and budgets.
 

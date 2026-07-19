@@ -5,8 +5,13 @@ import {
   requireOwnedCategory,
   requireOwnedDevice,
   requireOwnedTag,
+  validateCategoryParentRelationship,
   validateTransactionRelationships,
 } from "./domain-authorization";
+import {
+  mergeAndValidateSynchronizedRecord,
+  validateSynchronizedMetadata,
+} from "./sync-validation";
 
 const operationSchema = z.object({
   op: z.enum(["PUT", "PATCH", "DELETE"]),
@@ -96,7 +101,6 @@ const delegateNames = {
 } as const;
 
 const immutable = new Set(["id", "userId", "createdAt"]);
-const serverOnly = new Set(["passwordHash"]);
 const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
   User: new Set(["name", "currency", "timezone", "updatedAt"]),
   Account: new Set([
@@ -110,7 +114,6 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "isArchived",
     "createdAt",
     "updatedAt",
-    "deletedAt",
   ]),
   Category: new Set([
     "userId",
@@ -122,7 +125,6 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "isArchived",
     "createdAt",
     "updatedAt",
-    "deletedAt",
   ]),
   Budget: new Set([
     "userId",
@@ -135,9 +137,8 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "rolloverPolicy",
     "createdAt",
     "updatedAt",
-    "deletedAt",
   ]),
-  BudgetCategory: new Set(["budgetId", "categoryId", "createdAt", "deletedAt"]),
+  BudgetCategory: new Set(["budgetId", "categoryId", "createdAt"]),
   EnvelopeAllocation: new Set([
     "budgetId",
     "categoryId",
@@ -145,7 +146,6 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "occurredAt",
     "note",
     "createdAt",
-    "deletedAt",
   ]),
   BudgetTransfer: new Set([
     "budgetId",
@@ -155,7 +155,6 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "occurredAt",
     "note",
     "createdAt",
-    "deletedAt",
   ]),
   Transaction: new Set([
     "userId",
@@ -171,26 +170,11 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "occurredAt",
     "createdAt",
     "updatedAt",
-    "deletedAt",
   ]),
-  Tag: new Set([
-    "userId",
-    "name",
-    "color",
-    "createdAt",
-    "updatedAt",
-    "deletedAt",
-  ]),
-  TransactionTag: new Set(["transactionId", "tagId", "createdAt", "deletedAt"]),
+  Tag: new Set(["userId", "name", "color", "createdAt", "updatedAt"]),
+  TransactionTag: new Set(["transactionId", "tagId", "createdAt"]),
   Attachment: new Set(),
-  Device: new Set([
-    "userId",
-    "name",
-    "platform",
-    "lastSeenAt",
-    "createdAt",
-    "deletedAt",
-  ]),
+  Device: new Set(["userId", "name", "platform", "lastSeenAt", "createdAt"]),
   SyncState: new Set([
     "userId",
     "deviceId",
@@ -198,7 +182,6 @@ const allowedFields: Record<Operation["table"], ReadonlySet<string>> = {
     "checkpoint",
     "createdAt",
     "updatedAt",
-    "deletedAt",
   ]),
 };
 const requiredPutFields: Record<Operation["table"], readonly string[]> = {
@@ -234,7 +217,14 @@ const requiredPutFields: Record<Operation["table"], readonly string[]> = {
     "occurredAt",
     "createdAt",
   ],
-  BudgetTransfer: ["budgetId", "amount", "occurredAt", "createdAt"],
+  BudgetTransfer: [
+    "budgetId",
+    "fromCategoryId",
+    "toCategoryId",
+    "amount",
+    "occurredAt",
+    "createdAt",
+  ],
   Transaction: [
     "userId",
     "accountId",
@@ -275,7 +265,6 @@ function cleanData(operation: Operation, userId: string) {
         `${key} is not writable for ${operation.table}`,
         [key],
       );
-    if (serverOnly.has(key) || key === "id") continue;
     if (dateFields.has(key) && typeof value === "string")
       result[key] = new Date(value);
     else result[key] = value;
@@ -287,34 +276,6 @@ function cleanData(operation: Operation, userId: string) {
       "An operation targets another user",
     );
   }
-  if (
-    ["Transaction", "EnvelopeAllocation", "BudgetTransfer"].includes(
-      operation.table,
-    ) &&
-    "amount" in source &&
-    (typeof source.amount !== "string" ||
-      !/^\d+(?:\.\d{1,4})?$/.test(source.amount) ||
-      !/[1-9]/.test(source.amount))
-  )
-    throw new HttpError(
-      400,
-      "INVALID_SYNC_OPERATION",
-      "Amount must be a positive decimal with at most four fractional digits",
-      ["amount"],
-    );
-  if (
-    operation.table === "Transaction" &&
-    "importFingerprint" in source &&
-    source.importFingerprint !== null &&
-    (typeof source.importFingerprint !== "string" ||
-      !/^[a-f0-9]{64}$/.test(source.importFingerprint))
-  )
-    throw new HttpError(
-      400,
-      "INVALID_SYNC_OPERATION",
-      "Import fingerprint must be a SHA-256 hexadecimal string",
-      ["importFingerprint"],
-    );
   return result;
 }
 
@@ -324,6 +285,33 @@ function delegate(
 ): Delegate {
   const key = delegateNames[table];
   return (db as unknown as Record<string, Delegate>)[key]!;
+}
+
+async function validateOperation(
+  db: PrismaClient | TransactionClient,
+  operation: Operation,
+): Promise<Operation> {
+  if (operation.op === "DELETE") return operation;
+  const existing =
+    operation.op === "PATCH"
+      ? ((await delegate(db, operation.table).findFirst({
+          where: { id: operation.id },
+        })) as Record<string, unknown> | null)
+      : null;
+  const validated = mergeAndValidateSynchronizedRecord(
+    operation.table,
+    existing,
+    operation.data ?? {},
+  );
+  const data = Object.fromEntries(
+    Object.entries(operation.data ?? {}).map(([key, value]) => [
+      key,
+      key in validated
+        ? validated[key]
+        : validateSynchronizedMetadata(key, value),
+    ]),
+  );
+  return { ...operation, data };
 }
 
 async function assertOwned(
@@ -517,9 +505,33 @@ async function assertOwned(
   }
   if (
     operation.table === "Category" &&
-    typeof operation.data?.parentId === "string"
-  )
-    await requireOwnedCategory(userId, operation.data.parentId, db);
+    operation.data &&
+    ("parentId" in operation.data || "type" in operation.data)
+  ) {
+    const current =
+      operation.op === "PUT"
+        ? null
+        : await db.category.findFirst({
+            where: { id: operation.id, userId },
+            select: { parentId: true, type: true },
+          });
+    const parentId =
+      "parentId" in operation.data
+        ? operation.data.parentId
+        : current?.parentId;
+    const type = "type" in operation.data ? operation.data.type : current?.type;
+    if (
+      (parentId === null || typeof parentId === "string") &&
+      (type === "EXPENSE" || type === "INCOME")
+    )
+      await validateCategoryParentRelationship(
+        userId,
+        operation.id,
+        parentId,
+        type,
+        db,
+      );
+  }
   if (
     operation.table === "SyncState" &&
     typeof operation.data?.deviceId === "string"
@@ -532,18 +544,21 @@ async function applyOperation(
   operation: Operation,
   userId: string,
 ) {
-  await assertOwned(db, operation, userId);
-  const model = delegate(db, operation.table);
-  if (operation.op === "DELETE") {
+  const validatedOperation = await validateOperation(db, operation);
+  await assertOwned(db, validatedOperation, userId);
+  const model = delegate(db, validatedOperation.table);
+  if (validatedOperation.op === "DELETE") {
     await model.updateMany({
-      where: { id: operation.id },
+      where: { id: validatedOperation.id },
       data: { deletedAt: new Date() },
     });
     return;
   }
-  const data = cleanData(operation, userId);
-  if (operation.op === "PUT") {
-    const existing = await model.findFirst({ where: { id: operation.id } });
+  const data = cleanData(validatedOperation, userId);
+  if (validatedOperation.op === "PUT") {
+    const existing = await model.findFirst({
+      where: { id: validatedOperation.id },
+    });
     if (existing) {
       const record = existing as Record<string, unknown>;
       const compatible = Object.entries(data).every(([key, value]) => {
@@ -560,8 +575,8 @@ async function applyOperation(
         [],
         {
           conflict: {
-            entity: operation.table,
-            recordId: operation.id,
+            entity: validatedOperation.table,
+            recordId: validatedOperation.id,
             kind: "ID_COLLISION",
             fields: [],
             recovery: "RECREATE_WITH_NEW_ID",
@@ -571,12 +586,12 @@ async function applyOperation(
     }
     await model.create({
       data: {
-        id: operation.id,
+        id: validatedOperation.id,
         ...data,
-        ...(operation.table === "User"
+        ...(validatedOperation.table === "User"
           ? {}
-          : operation.table === "BudgetCategory" ||
-              operation.table === "TransactionTag"
+          : validatedOperation.table === "BudgetCategory" ||
+              validatedOperation.table === "TransactionTag"
             ? {}
             : { userId }),
       },
@@ -584,7 +599,7 @@ async function applyOperation(
     return;
   }
   for (const key of immutable) delete data[key];
-  await model.updateMany({ where: { id: operation.id }, data });
+  await model.updateMany({ where: { id: validatedOperation.id }, data });
 }
 
 export async function applyUpload(

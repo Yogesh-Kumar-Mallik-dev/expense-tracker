@@ -1,3 +1,12 @@
+import { z } from "zod";
+
+export const syncStateSchema = z.object({
+  userId: z.uuid(),
+  deviceId: z.uuid(),
+  lastSyncedAt: z.iso.datetime().nullable().default(null),
+  checkpoint: z.string().max(10_000).nullable().default(null),
+});
+
 export type SyncConflictKind =
   | "UNIQUE_CONSTRAINT"
   | "MISSING_PARENT"

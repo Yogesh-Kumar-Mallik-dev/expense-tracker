@@ -21,7 +21,7 @@ export interface TagRepositoryPort extends CrudRepositoryPort<
 > {
   listByUser(userId: string): Promise<TagRecord[]>;
 }
-const createSchema = z.object({
+export const createTagSchema = z.object({
   userId: z.uuid(),
   name: z.string().trim().min(1).max(80),
   color: z
@@ -30,7 +30,7 @@ const createSchema = z.object({
     .nullable()
     .optional(),
 });
-const updateSchema = createSchema
+export const updateTagSchema = createTagSchema
   .omit({ userId: true })
   .partial()
   .refine((v) => Object.keys(v).length > 0);
@@ -44,7 +44,7 @@ export class TagService extends SingleRowService<
   }
   // Concurrency note: N/A - pure validation and UUID-backed record construction.
   protected build(input: CreateTagInput, id: string, now: string): TagRecord {
-    const v = createSchema.parse(input);
+    const v = createTagSchema.parse(input);
     return {
       id,
       userId: v.userId,
@@ -57,7 +57,7 @@ export class TagService extends SingleRowService<
   }
   // Concurrency note: N/A - pure validation with no stored-state dependency.
   protected parseUpdate(input: UpdateTagInput) {
-    return updateSchema.parse(input) as UpdateTagInput;
+    return updateTagSchema.parse(input) as UpdateTagInput;
   }
   // Concurrency note: Safe read-only query; duplicate-name conflicts are surfaced separately and never resolved by timestamp.
   list(userId: string) {
