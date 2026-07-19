@@ -202,6 +202,7 @@ Project-wide decisions:
 
 - [Financial domain decisions](./DOMAIN.md)
 - [Release and operations](./OPERATIONS.md)
+- [Environment configuration](./secrets/README.md)
 
 Each application and package contains:
 

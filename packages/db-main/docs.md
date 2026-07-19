@@ -83,9 +83,10 @@ ownership filters, tombstones, and domain-oriented queries.
 
 ## Environment
 
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/expense_tracker
-```
+The database connection inventory and repository-local default live in
+[`secrets/`](../../secrets/README.md). This package's development command loads
+`secrets/env.development.database`; deployments inject `DATABASE_URL` from
+their secret manager.
 
 Never expose this package or its environment variables to browser or native
 client bundles.

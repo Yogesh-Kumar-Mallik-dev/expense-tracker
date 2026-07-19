@@ -29,19 +29,20 @@ Business rules are not implemented in Route Handlers. Domain endpoints call
 From the repository root:
 
 ```sh
-cp apps/api/.env.example apps/api/.env
 pnpm install
-pnpm --filter @expense-tracker/db-main generate
-pnpm --filter @expense-tracker/api dev
+pnpm dev:api
 ```
 
-The API is served at `http://localhost:3001` by default. A working PostgreSQL
-database and valid secrets are required.
+The command loads `secrets/env.development.database` and
+`secrets/env.development.api`, provisions the local Prisma Postgres server,
+applies migrations, and serves the API at `http://localhost:3001`.
+Environment ownership and production configuration are documented in
+[`secrets/README.md`](../../secrets/README.md).
 
 ## Commands
 
 ```sh
-pnpm --filter @expense-tracker/api dev
+pnpm dev:api
 pnpm --filter @expense-tracker/api check-types
 pnpm test:api
 pnpm --filter @expense-tracker/api build

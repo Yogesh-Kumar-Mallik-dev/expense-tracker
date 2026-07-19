@@ -4,19 +4,17 @@ For architecture and security decisions, see [docs.md](./docs.md).
 
 ## Configure and run
 
-Create the local environment file:
+The repository-local development settings live in
+[`secrets/env.development.api`](../../secrets/env.development.api) and
+[`secrets/env.development.database`](../../secrets/env.development.database).
+Start the database, apply migrations, and run the API with:
 
 ```sh
-cp apps/api/.env.example apps/api/.env
+pnpm dev:api
 ```
 
-Set a reachable PostgreSQL URL and replace every example secret. Apply the
-existing Prisma migration, then start the API:
-
-```sh
-pnpm --filter @expense-tracker/db-main exec prisma migrate deploy
-pnpm --filter @expense-tracker/api dev
-```
+Do not put production values in these files. Use the inventories under
+`secrets/env.production.*` to configure the deployment secret manager.
 
 Validate a change with:
 

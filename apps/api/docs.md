@@ -250,9 +250,14 @@ Node cryptography are not Edge-compatible. Node.js 20.19 or newer is required.
 | `LOG_DIRECTORY`                | Rotating JSONL output directory                     |
 | `LOG_STACKS`                   | Show stack boxes in the production terminal         |
 | `TRUST_PROXY`                  | Trust deployment-overwritten forwarding headers     |
+| `CORS_ORIGINS`                 | Comma-separated browser origins allowed by the API   |
+| `RETENTION_JOB_SECRET`         | Authenticates the internal retention job             |
+| `TELEMETRY_INGEST_URL`         | Server-side telemetry destination                    |
+| `TELEMETRY_INGEST_TOKEN`       | Optional server-side telemetry bearer token          |
 
-Secrets must not use the example values and must never be exposed to frontend
-bundles.
+The authoritative variable inventories are under
+[`secrets/`](../../secrets/README.md). Secrets must not use example values and
+must never be exposed to frontend bundles.
 
 ## Attachment binary lifecycle
 

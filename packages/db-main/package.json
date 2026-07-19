@@ -16,10 +16,10 @@
     }
   },
   "scripts": {
-    "dev": "prisma dev --detach --db-port 51214 --shadow-db-port 51215 && DATABASE_URL='postgresql://postgres:postgres@localhost:51214/template1?sslmode=disable&connection_limit=10' prisma migrate deploy",
-    "generate": "prisma generate",
-    "build": "prisma generate && tsc",
-    "check-types": "prisma generate && tsc --noEmit"
+    "dev": "node ../../secrets/run-with-env.mjs ../../secrets/env.development.database -- node node_modules/prisma/build/index.js dev --detach --db-port 51214 --shadow-db-port 51215 && node ../../secrets/run-with-env.mjs ../../secrets/env.development.database -- node node_modules/prisma/build/index.js migrate deploy",
+    "generate": "node ../../secrets/run-with-env.mjs ../../secrets/env.development.database -- node node_modules/prisma/build/index.js generate",
+    "build": "pnpm run generate && tsc",
+    "check-types": "pnpm run generate && tsc --noEmit"
   },
   "dependencies": {
     "@expense-tracker/services": "workspace:*",
